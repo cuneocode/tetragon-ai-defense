@@ -16,6 +16,8 @@ They can be used together for defense in depth, or separately.
 ### Tetragon Dashboard
 ```bash
 cd tetragon-dashboard
+# First run: replace /home/cuneocode in policies/*.yaml with your home directory:
+sed -i "s|/home/cuneocode|$HOME|g" policies/*.yaml
 node server.mjs
 # Open http://localhost:18790
 ```
