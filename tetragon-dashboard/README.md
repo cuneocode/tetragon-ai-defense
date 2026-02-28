@@ -1,5 +1,7 @@
 # OpenClaw Security Dashboard
 
+**Proof of concept only** — not production-ready.
+
 Runtime security visibility and policy enforcement for [OpenClaw](https://github.com/open-claw/openclaw) AI agents, powered by Cilium Tetragon eBPF.
 
 ---

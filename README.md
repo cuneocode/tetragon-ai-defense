@@ -1,13 +1,15 @@
 # Tetragon AI Defense
 
-Runtime security visibility and policy enforcement for [OpenClaw](https://github.com/open-claw/openclaw) AI agents. This monorepo contains two components:
+**Proof of concept only** — not production-ready. For experimentation and evaluation.
+
+Runtime security visibility and policy enforcement for [OpenClaw](https://github.com/open-claw/openclaw) AI agents. This monorepo contains two **independent** components — you can use either one, both, or neither:
 
 | Component | Description |
 |-----------|-------------|
 | **tetragon-dashboard** | Web dashboard and server for Cilium Tetragon eBPF — real-time observability, policy management, kill switches |
 | **aidef-shim** | HTTP proxy that inspects prompts via Cisco AI Defense before forwarding to the LLM |
 
-Both work together for defense in depth: kernel-level enforcement (Tetragon) and prompt-level inspection (AI Defense).
+They can be used together for defense in depth, or separately.
 
 ## Quick Start
 
