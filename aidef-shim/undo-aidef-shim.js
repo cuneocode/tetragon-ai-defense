@@ -4,12 +4,12 @@
 //
 // Usage:
 //   node undo-aidef-shim.js
-//   openclaw gateway config.apply --file /home/cuneocode/.openclaw/openclaw.json
+//   openclaw gateway config.apply --file $HOME/.openclaw/openclaw.json
 
 const fs = require('fs');
 const path = require('path');
 
-const CONFIG_PATH = '/home/cuneocode/.openclaw/openclaw.json';
+const CONFIG_PATH = (process.env.HOME || process.env.USERPROFILE || '/tmp') + '/.openclaw/openclaw.json';
 
 function main() {
   const absPath = path.resolve(CONFIG_PATH);
@@ -51,7 +51,7 @@ function main() {
   fs.writeFileSync(absPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
   console.log('\nConfig updated. Now run:');
   console.log(
-    '  openclaw gateway config.apply --file /home/cuneocode/.openclaw/openclaw.json'
+    '  openclaw gateway config.apply --file ' + CONFIG_PATH
   );
 }
 

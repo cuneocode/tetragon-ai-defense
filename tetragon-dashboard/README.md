@@ -360,6 +360,8 @@ Each layer catches threats the others might miss:
 
 ## Quick Start
 
+**Before first run:** Policy YAMLs in `policies/` use `/home/cuneocode` for paths. Replace with your home directory (e.g. `sed -i 's|/home/cuneocode|'$HOME'|g' policies/*.yaml`) before applying.
+
 ```bash
 # Start the dashboard server
 node server.mjs
