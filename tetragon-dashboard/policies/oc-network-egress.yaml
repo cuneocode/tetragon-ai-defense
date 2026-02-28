@@ -1,0 +1,14 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-network-egress
+spec:
+  kprobes:
+    - call: "tcp_connect"
+      syscall: false
+      selectors:
+        - matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "sock"

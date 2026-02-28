@@ -1,0 +1,30 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-priv-ops
+spec:
+  kprobes:
+    - call: "__arm64_sys_bpf"
+      syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "int"
+    - call: "__arm64_sys_init_module"
+      syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "nop"
+    - call: "__arm64_sys_finit_module"
+      syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "int"

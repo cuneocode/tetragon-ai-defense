@@ -1,0 +1,25 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-sensitive-files
+spec:
+  kprobes:
+    - call: "security_file_open"
+      syscall: false
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Prefix"
+              values:
+                - "/home/cuneocode/.openclaw/credentials"
+                - "/home/cuneocode/.openclaw/openclaw.json"
+                - "/home/cuneocode/.openclaw/exec-approvals"
+                - "/home/cuneocode/.ssh/"
+                - "/home/cuneocode/.aws/credentials"
+                - "/home/cuneocode/.kube/config"
+                - "/etc/shadow"
+          matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "file"

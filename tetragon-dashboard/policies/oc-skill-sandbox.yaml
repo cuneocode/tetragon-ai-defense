@@ -1,0 +1,50 @@
+# Trace exec and file access from skill install dir and clawhub CLI.
+# Dashboard filters "skill-originated" by process path / cwd for network and other events.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-skill-sandbox
+spec:
+  kprobes:
+    - call: "__arm64_sys_execve"
+      syscall: true
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Prefix"
+              values:
+                - "/home/cuneocode/.openclaw/tools/"
+          matchActions:
+            - action: Post
+            - action: Sigkill
+        - matchArgs:
+            - index: 0
+              operator: "Postfix"
+              values:
+                - "/clawhub"
+          matchActions:
+            - action: Post
+            - action: Sigkill
+      args:
+        - index: 0
+          type: "string"
+        - index: 1
+          type: "string"
+    - call: "security_file_open"
+      syscall: false
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Prefix"
+              values:
+                - "/home/cuneocode/.openclaw/tools/"
+                - "/home/cuneocode/.openclaw/credentials/"
+                - "/home/cuneocode/.ssh/"
+                - "/home/cuneocode/.openclaw/openclaw.json"
+          matchActions:
+            - action: Post
+            - action: Override
+              argError: -1
+      args:
+        - index: 0
+          type: "file"

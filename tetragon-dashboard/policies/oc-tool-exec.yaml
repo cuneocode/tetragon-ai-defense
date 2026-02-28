@@ -1,0 +1,39 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-tool-exec
+spec:
+  kprobes:
+    - call: "__arm64_sys_execve"
+      syscall: true
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Postfix"
+              values:
+                - "/curl"
+                - "/wget"
+                - "/ssh"
+                - "/scp"
+                - "/rsync"
+                - "/git"
+                - "/kubectl"
+                - "/helm"
+                - "/docker"
+                - "/podman"
+                - "/python"
+                - "/python3"
+                - "/node"
+                - "/npx"
+                - "/npm"
+                - "/openclaw"
+                - "/openclaw-gateway"
+                - "/clawhub"
+          matchActions:
+            - action: Post
+            - action: Sigkill
+      args:
+        - index: 0
+          type: "string"
+        - index: 1
+          type: "string"

@@ -1,0 +1,2169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OpenClaw · Tetragon Visibility</title>
+<meta name="color-scheme" content="dark"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0c0c0e;--surface:#141417;--border:#232329;--border-hl:#3a3a44;--text:#e4e4e9;--text2:#9d9da8;--text3:#63636e;--accent:#6366f1;--green:#34d399;--red:#f87171;--amber:#fbbf24;--violet:#a78bfa;--rose:#fb7185;--orange:#fb923c;--mono:'SFMono-Regular',Menlo,Monaco,'Cascadia Code','Liberation Mono',monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;--sidebar-width:220px}
+html{background:var(--bg);color:var(--text);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+body{min-height:100vh;display:flex}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+/* Sidebar nav */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-width);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;overflow:hidden}
+.sidebar-brand{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sidebar-brand h1{font-size:15px;font-weight:700;letter-spacing:.3px;line-height:1.2}
+.sidebar-brand .sub{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:.05em;text-transform:uppercase}
+.sidebar-brand .back{font-size:11px;color:var(--text3);display:block;margin-bottom:8px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 8px;scrollbar-width:none}
+.sidebar-nav::-webkit-scrollbar{display:none}
+.sidebar-section{margin-bottom:16px}
+.sidebar-section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);padding:4px 10px 6px;user-select:none}
+.sidebar-nav button{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;color:var(--text2);font:13px/1.2 var(--sans);padding:8px 10px;border-radius:7px;cursor:pointer;text-align:left;transition:background .12s,color .12s;white-space:nowrap}
+.sidebar-nav button:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.sidebar-nav button.active{background:rgba(99,102,241,.12);color:var(--text);font-weight:500}
+.sidebar-nav button svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+.sidebar-nav button.active svg{opacity:1;color:var(--accent)}
+.sidebar-footer{flex-shrink:0;padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:stretch;justify-content:space-between;gap:8px}
+.sidebar-footer .ks-panel{display:flex;flex-direction:column;gap:4px;align-items:stretch;width:100%}
+.sidebar-footer .ks-btn{font-size:10px;padding:5px 8px;border-radius:5px;justify-content:center}
+.sidebar-footer .ks-dot{width:5px;height:5px}
+/* Main content area */
+.shell{margin-left:var(--sidebar-width);flex:1;padding:24px 28px 48px;max-width:1100px;min-height:100vh}
+.shell-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.shell-header h2{font-size:20px;font-weight:600;letter-spacing:.2px}
+.shell-header .sub{font-size:12px;color:var(--text3);margin-top:2px}
+/* Hide old top tabs (replaced by sidebar) */
+.tabs{display:none}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.controls .range{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px}
+.controls .range button{background:none;border:none;color:var(--text3);font:12px/1 var(--sans);padding:5px 10px;border-radius:4px;cursor:pointer}
+.controls .range button.active{background:rgba(255,255,255,.08);color:var(--text)}
+.controls input,.controls select{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font:12px/1.4 var(--sans);color:var(--text);outline:none}
+.controls input:focus,.controls select:focus{border-color:var(--border-hl)}
+/* Quick filter chips */
+.quick-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.qlabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
+.qfilt{background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text2);font-size:11px;padding:3px 10px;cursor:pointer;transition:background .12s,border-color .12s,color .12s;white-space:nowrap}
+.qfilt:hover{background:rgba(255,255,255,.06);border-color:var(--border-hl);color:var(--text)}
+.qfilt.active{background:rgba(99,102,241,.18);border-color:var(--accent);color:var(--text);font-weight:500}
+/* Stat cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.card .label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);margin-bottom:8px}
+.card .value{font-size:22px;font-weight:600;color:var(--text)}
+.card .sub{font-size:11px;color:var(--text3);margin-top:4px}
+.card .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dot.up{background:var(--green)}.dot.down{background:var(--red)}
+/* Activity feed */
+.feed{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.feed-item{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;transition:background .1s,border-color .1s}
+.feed-item:hover{background:rgba(255,255,255,.04);border-color:var(--border-hl)}
+.feed-item.selected{border-left:3px solid var(--accent);background:rgba(99,102,241,.07)}
+.feed-item.severity-notable{border-left:3px solid var(--amber)}
+.feed-item.severity-notable.selected{border-left:3px solid var(--accent)}
+.feed-item.severity-critical{border-left:3px solid var(--red)}
+.feed-item.severity-critical.selected{border-left:3px solid var(--accent)}
+.feed-item .time{color:var(--text3);font-variant-numeric:tabular-nums;min-width:72px;flex-shrink:0}
+.feed-item .kind{font-weight:600;min-width:84px;flex-shrink:0}
+.feed-item .body{flex:1;overflow:hidden;text-overflow:ellipsis}
+.feed-item .mono{font-family:var(--mono);font-size:11px}
+.feed-item .tag{font-size:10px;padding:2px 6px;border-radius:4px;margin-right:4px}
+.tag.session{background:rgba(99,102,241,.15);color:var(--accent)}
+.tag.tetragon{background:rgba(167,139,250,.15);color:var(--violet)}
+/* Tables */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:12px}
+.table-wrap thead{background:rgba(255,255,255,.03)}
+.table-wrap th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);border-bottom:1px solid var(--border)}
+.table-wrap td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text2);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.table-wrap tr:last-child td{border-bottom:none}
+.table-wrap .mono{font-family:var(--mono);font-size:11px}
+.table-wrap .hl{color:var(--text)}
+.table-wrap .time{color:var(--text3);font-variant-numeric:tabular-nums}
+.table-wrap tr.severity-notable{background:rgba(251,191,36,.06)}
+.table-wrap tr.severity-critical{background:rgba(248,113,113,.08)}
+.table-wrap tr.clickable{cursor:pointer}
+.table-wrap tr.clickable:hover{background:rgba(255,255,255,.04)}
+.table-wrap tr.selected{background:rgba(99,102,241,.12)!important;outline:1px solid rgba(99,102,241,.4) inset}
+.table-wrap .footer{padding:8px 12px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);background:rgba(255,255,255,.02)}
+/* Tags */
+.tag.exec{background:rgba(99,102,241,.12);color:var(--accent)}
+.tag.net{background:rgba(167,139,250,.12);color:var(--violet)}
+.tag.file{background:rgba(251,113,133,.12);color:var(--rose)}
+.tag.skill{background:rgba(251,146,60,.12);color:var(--orange)}
+/* Op badges */
+.badge-open{background:rgba(99,102,241,.2);color:var(--accent);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.badge-write{background:rgba(251,191,36,.2);color:var(--amber);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.badge-delete{background:rgba(248,113,113,.2);color:var(--red);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+/* Header enforcing badge */
+.header-enforcing{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;margin-left:8px}
+/* Mode badges */
+.mode-badge.monitor{color:var(--green);font-weight:600}
+.mode-badge.enforce{color:var(--red);font-weight:600}
+/* Kill switch buttons */
+.ks-panel{display:flex;gap:7px;align-items:center}
+.ks-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;color:var(--text2);font:11px/1 var(--sans);font-weight:600;padding:8px 13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.ks-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.ks-btn.active{background:rgba(248,113,113,.18);border-color:var(--red);color:var(--red)}
+.ks-btn.active:hover{background:rgba(248,113,113,.28)}
+.ks-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;transition:background .15s}
+/* Modal overlay */
+#modal-overlay{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+#modal-box{background:var(--surface);border:1px solid var(--border-hl);border-radius:14px;max-width:780px;width:100%;max-height:84vh;overflow-y:auto;padding:24px 26px;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+/* Detail drawer content (reused inside modal) */
+.drawer-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.drawer-header h3{font-size:14px;font-weight:600;line-height:1.4;margin:0}
+.drawer-close{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;padding:4px 10px;flex-shrink:0}
+.drawer-close:hover{color:var(--text);border-color:var(--border-hl)}
+.drawer-grid{display:grid;grid-template-columns:auto 1fr;gap:5px 20px;margin-bottom:10px}
+.drawer-key{color:var(--text3);font-size:12px}
+.drawer-val{font-family:var(--mono);font-size:11px;word-break:break-all}
+.drawer-pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;overflow:auto;font-size:11px;white-space:pre-wrap;word-break:break-all;margin:8px 0;line-height:1.55}
+.drawer-enforce{display:flex;align-items:center;gap:10px;padding:8px 0;flex-wrap:wrap}
+/* Session context section inside modal */
+.session-ctx{background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:12px 14px;margin:12px 0}
+.session-ctx-item{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.session-ctx-item:last-child{border-bottom:none}
+.session-ctx-time{color:var(--text3);font-size:10px;font-variant-numeric:tabular-nums}
+.session-ctx-kind{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:1px 5px;border-radius:3px;margin:0 4px;background:rgba(99,102,241,.18);color:var(--accent)}
+.payload-note{font-size:11px;color:var(--text3);background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-top:8px;line-height:1.6}
+/* Buttons */
+.btn{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text2);font:12px/1 var(--sans);padding:5px 14px;cursor:pointer;transition:background .1s,color .1s}
+.btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:rgba(248,113,113,.12)}
+.btn.primary{border-color:var(--accent);color:var(--accent)}
+.btn.primary:hover{background:rgba(99,102,241,.12)}
+/* Policy cards */
+.policy-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.ks-policy-card{border-color:rgba(248,113,113,.25)}
+.ks-policy-card.ks-active{border-color:var(--red);background:rgba(248,113,113,.05)}
+.ks-section-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);margin:24px 0 6px;display:flex;align-items:center;gap:8px}
+.ks-section-desc{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.6}
+.ks-countdown{font-variant-numeric:tabular-nums;font-weight:700;color:var(--red)}
+.tag.ks{background:rgba(248,113,113,.15);color:var(--red)}
+.policy-textarea{width:100%;min-height:220px;max-height:400px;background:var(--bg);border:1px solid var(--border-hl);border-radius:6px;color:var(--text);font:11px/1.6 var(--mono);padding:10px;resize:vertical;outline:none;margin-top:8px;tab-size:2}
+.policy-textarea:focus{border-color:var(--accent)}
+.yaml-pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font:11px/1.6 var(--mono);max-height:320px;overflow:auto;white-space:pre;margin-top:8px}
+.policy-save-row{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.save-msg{font-size:11px;color:var(--green)}
+.save-err{font-size:11px;color:var(--red)}
+.policy-warn{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.35);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+/* Misc */
+.empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
+.loading{padding:48px;text-align:center;color:var(--text3)}
+/* ── File Viewer Modal ── */
+#file-modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+#file-modal-box{background:var(--surface);border:1px solid var(--border-hl);border-radius:12px;max-width:920px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.7);overflow:hidden}
+.file-modal-header{padding:13px 18px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;background:rgba(255,255,255,.02)}
+.file-modal-title{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)}.file-modal-sub{font-size:11px;color:var(--text3);margin-top:3px}
+#file-modal-body{flex:1;overflow:auto}
+.file-lines{counter-reset:line}.file-line{display:flex;min-height:1.7em;font:11px/1.7 var(--mono)}.file-line:hover{background:rgba(255,255,255,.025)}
+.file-line.highlighted{background:rgba(248,113,113,.12);border-left:3px solid var(--red)}
+.file-line-num{color:var(--text3);padding:0 10px;user-select:none;text-align:right;min-width:46px;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06);margin-right:12px;font-size:10px;line-height:inherit}
+.file-line.highlighted .file-line-num{color:var(--red);font-weight:700}
+.file-line-content{flex:1;white-space:pre;padding-right:16px;color:var(--text2)}
+.file-line.highlighted .file-line-content{color:var(--text)}
+.file-issue-banner{padding:10px 16px;background:rgba(248,113,113,.08);border-bottom:1px solid rgba(248,113,113,.2);font-size:11px;color:var(--text2);line-height:1.5;flex-shrink:0}
+/* ── Scanner Settings Panel ── */
+.scanner-settings{background:var(--surface);border:1px solid var(--border-hl);border-radius:10px;padding:16px;margin-bottom:14px}
+.scanner-settings-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.scanner-settings-head h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text2)}
+.settings-row{display:flex;gap:20px;flex-wrap:wrap}
+.settings-group{flex:1;min-width:200px}
+.settings-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:6px;display:block}
+.preset-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text2);font:12px/1 var(--sans);font-weight:500;padding:6px 13px;cursor:pointer;transition:all .12s}
+.preset-btn:hover{background:rgba(255,255,255,.06);color:var(--text);border-color:var(--border-hl)}
+.preset-btn.active{background:rgba(99,102,241,.15);color:var(--text);border-color:rgba(99,102,241,.45)}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.toggle-sw{position:relative;display:inline-block;width:32px;height:18px;flex-shrink:0}
+.toggle-sw input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--border-hl);border-radius:9px;transition:.2s}
+.toggle-slider:before{position:absolute;content:'';height:12px;width:12px;left:3px;bottom:3px;background:var(--text3);border-radius:50%;transition:.2s}
+.toggle-sw input:checked+.toggle-slider{background:var(--accent)}.toggle-sw input:checked+.toggle-slider:before{transform:translateX(14px);background:#fff}
+.aidefense-panel{background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:14px;margin-top:12px}
+.aidefense-panel h4{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.settings-input{width:100%;background:var(--bg);border:1px solid var(--border-hl);border-radius:6px;padding:7px 10px;font:12px/1 var(--mono);color:var(--text);outline:none;transition:border-color .15s;box-sizing:border-box}
+.settings-input:focus{border-color:var(--accent)}
+/* ── Analyzer tags ── */
+.analyzer-tag{display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
+.analyzer-tag.static,.analyzer-tag.staticanalyzer{background:rgba(99,102,241,.14);color:var(--accent)}
+.analyzer-tag.behavioral{background:rgba(52,211,153,.1);color:var(--green)}
+.analyzer-tag.pipeline{background:rgba(251,191,36,.1);color:var(--amber)}
+.analyzer-tag.llm{background:rgba(167,139,250,.12);color:var(--violet)}
+.analyzer-tag.aidefense,.analyzer-tag.aidefenseanalyzer{background:rgba(248,113,113,.1);color:var(--rose)}
+.analyzer-tag.bytecode{background:rgba(251,146,60,.1);color:var(--orange)}
+/* Scanner tab */
+.scanner-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.scanner-stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.scanner-stat .label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:4px}
+.scanner-stat .value{font-size:20px;font-weight:700}
+.scanner-progress{margin-bottom:14px}
+.scanner-progress-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.scanner-progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s ease}
+.scanner-skill{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:6px;cursor:pointer;transition:border-color .12s,background .12s}
+.scanner-skill:hover{border-color:var(--border-hl);background:rgba(255,255,255,.02)}
+.scanner-skill.expanded{border-color:var(--accent);background:rgba(99,102,241,.04)}
+.scanner-skill-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.scanner-skill-name{font-weight:600;font-size:13px}
+.scanner-skill-desc{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5}
+.scanner-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.04em;text-transform:uppercase}
+.scanner-badge.clean{background:rgba(52,211,153,.12);color:var(--green)}
+.scanner-badge.info{background:rgba(157,157,168,.12);color:var(--text2)}
+.scanner-badge.low{background:rgba(157,157,168,.12);color:var(--text2)}
+.scanner-badge.medium{background:rgba(251,191,36,.12);color:var(--amber)}
+.scanner-badge.high{background:rgba(248,113,113,.12);color:var(--red)}
+.scanner-badge.critical{background:rgba(162,28,175,.12);color:#c084fc}
+.scanner-badge.scanning{background:rgba(99,102,241,.12);color:var(--accent)}
+.scanner-badge.error{background:rgba(248,113,113,.12);color:var(--red)}
+.scanner-findings{padding:8px 0 4px 12px;border-left:2px solid var(--border)}
+.scanner-finding{padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg);margin-bottom:5px}
+.scanner-finding-title{font-weight:600;font-size:12px;color:var(--text);margin-bottom:2px}
+.scanner-finding-desc{font-size:11px;color:var(--text2);line-height:1.5}
+.scanner-finding-meta{font-size:10px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
+.scanner-about{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px 16px;margin-top:16px}
+.scanner-about h4{font-size:12px;font-weight:600;margin-bottom:6px}
+.scanner-about p{font-size:11px;color:var(--text3);line-height:1.6}
+/* ── Scan logs ── */
+.scanner-logs-section{background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-top:16px;overflow:hidden}
+.scanner-logs-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;gap:8px;border-bottom:1px solid transparent;transition:background .15s}
+.scanner-logs-section:has(.scan-log-list) .scanner-logs-header{border-bottom-color:var(--border)}
+.scan-log-toggle-btn{display:flex;align-items:center;gap:8px;background:none;border:none;color:inherit;cursor:pointer;padding:0;flex:1;text-align:left;min-width:0}
+.scan-log-toggle-btn:hover{opacity:.85}
+.scan-log-chevron{font-size:13px;color:var(--text3)}
+.scan-log-count{font-size:10px;padding:1px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-weight:600}
+.scan-log-list{max-height:440px;overflow-y:auto;padding:8px 0}
+.scan-log-entry{display:flex;align-items:flex-start;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);transition:background .12s}
+.scan-log-entry:last-child{border-bottom:none}
+.scan-log-entry:hover{background:rgba(255,255,255,.03)}
+.scan-log-entry[data-phase="start"]{opacity:.75}
+.scan-log-icon{font-size:13px;margin-top:1px;flex-shrink:0;width:14px;text-align:center}
+.scan-log-body{flex:1;min-width:0}
+.scan-log-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px}
+.scan-log-skill{font-weight:600;font-size:12px;color:var(--text)}
+.scan-log-analyzers{display:flex;gap:4px;flex-wrap:wrap}
+.scan-log-msg{font-size:12px;color:var(--text2);line-height:1.4}
+.scan-log-time{font-size:10px;color:var(--text3);margin-left:auto;white-space:nowrap}
+.scan-meta-pill{font-size:10px;color:var(--text3)}
+.scan-meta-line{font-size:10px;color:var(--text3);margin-top:2px}
+.scan-badge{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600}
+.scan-badge-ok{background:rgba(52,211,153,.12);color:var(--green)}
+.scan-badge-err{background:rgba(248,113,113,.12);color:var(--red)}
+/* command block */
+.scan-cmd-block{display:flex;align-items:flex-start;gap:6px;margin-top:6px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:5px;padding:5px 8px}
+.scan-cmd-label{font-size:9px;font-weight:700;color:var(--text3);background:var(--surface2);border-radius:3px;padding:1px 4px;flex-shrink:0;margin-top:1px;letter-spacing:.05em}
+.scan-cmd-code{font-family:monospace;font-size:11px;color:var(--text2);word-break:break-all;white-space:pre-wrap;flex:1}
+/* output expand buttons */
+.scan-output-btns{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.scan-output-btn{font-size:11px;padding:3px 9px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:var(--accent);border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .12s}
+.scan-output-btn:hover{background:rgba(99,102,241,.16)}
+.scan-output-btn-err{background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.2);color:var(--red)}
+.scan-output-btn-err:hover{background:rgba(248,113,113,.14)}
+/* raw output panels */
+.scan-raw-pre{margin-top:6px;padding:10px 12px;background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:6px;font-family:monospace;font-size:11px;line-height:1.55;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto;color:var(--text2)}
+.scan-raw-stdout{border-color:rgba(99,102,241,.25)}
+.scan-raw-stderr{border-color:rgba(248,113,113,.25);color:var(--red)}
+/* ── About / README rendered markdown ── */
+.md-body{line-height:1.7;color:var(--text2);max-width:820px}
+.md-body h1{font-size:24px;font-weight:700;color:var(--text);margin:0 0 8px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.md-body h2{font-size:18px;font-weight:700;color:var(--text);margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.md-body h3{font-size:15px;font-weight:600;color:var(--text);margin:24px 0 8px}
+.md-body h4{font-size:13px;font-weight:600;color:var(--text);margin:18px 0 6px}
+.md-body p{margin:0 0 12px;font-size:13px}
+.md-body ul,.md-body ol{margin:0 0 12px;padding-left:24px;font-size:13px}
+.md-body li{margin-bottom:4px}
+.md-body hr{border:none;border-top:1px solid var(--border);margin:24px 0}
+.md-body a{color:var(--accent)}
+.md-body strong{color:var(--text);font-weight:600}
+.md-body code{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:12px;color:var(--accent)}
+.md-body pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0 0 14px;line-height:1.5}
+.md-body pre code{background:none;border:none;padding:0;font-size:11px;color:var(--text2)}
+.md-body table{width:100%;border-collapse:collapse;margin:0 0 16px;font-size:12px}
+.md-body th{text-align:left;padding:8px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);border-bottom:2px solid var(--border);background:rgba(255,255,255,.02)}
+.md-body td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text2)}
+.md-body blockquote{border-left:3px solid var(--accent);padding:8px 16px;margin:0 0 12px;background:rgba(99,102,241,.04);border-radius:0 6px 6px 0;font-size:13px;color:var(--text2)}
+.md-body .mermaid{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:20px;margin:0 0 14px;overflow-x:auto}
+.md-body .mermaid svg{max-width:100%}
+@media(max-width:900px){
+  .sidebar{width:60px}
+  .sidebar-brand .sub,.sidebar-brand .back,.sidebar-brand h1,.sidebar-section-label,.sidebar-nav button span:not(svg){display:none}
+  .sidebar-brand{padding:12px 10px}
+  .sidebar-nav button{justify-content:center;padding:10px}
+  .sidebar-footer{flex-direction:column;padding:8px 6px}
+  .shell{margin-left:60px}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <a class="back" href="http://localhost:18789">&larr; OpenClaw Control</a>
+    <h1>Security Dashboard <span id="enforcing-badge" class="header-enforcing" style="display:none">ENFORCING</span></h1>
+    <div class="sub">eBPF Visibility + AI Defense</div>
+  </div>
+  <div class="sidebar-nav" id="sidebar-nav">
+    <div class="sidebar-section">
+      <button data-tab="about">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>About</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Observability</div>
+      <button class="active" data-tab="activity">
+        <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <span>Activity Feed</span>
+      </button>
+      <button data-tab="llm">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        <span>LLM &amp; API</span>
+      </button>
+      <button data-tab="tools">
+        <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <span>Tool Exec</span>
+      </button>
+      <button data-tab="fileops">
+        <svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>File Ops</span>
+      </button>
+      <button data-tab="skills">
+        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>Skill Events</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">AI Defense</div>
+      <button data-tab="scanner">
+        <svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Skill Scanner</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Configuration</div>
+      <button data-tab="policies">
+        <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Policies</span>
+      </button>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="ks-panel" id="ks-panel" style="flex-direction:column;align-items:stretch;width:100%">
+      <button class="ks-btn" id="ks-exec-btn" title="Block all tool/subprocess execution" style="justify-content:center">
+        <span class="ks-dot"></span>Exec
+      </button>
+      <button class="ks-btn" id="ks-net-btn" title="Isolate outbound network" style="justify-content:center">
+        <span class="ks-dot"></span>Net
+      </button>
+    </div>
+  </div>
+</nav>
+<div class="shell">
+  <div id="content"><div class="loading">Loading…</div></div>
+</div>
+
+<!-- File Viewer Modal -->
+<div id="file-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Skill File Viewer">
+  <div id="file-modal-box">
+    <div class="file-modal-header">
+      <div>
+        <div class="file-modal-title" id="file-modal-title"></div>
+        <div class="file-modal-sub" id="file-modal-sub"></div>
+      </div>
+      <button class="drawer-close" id="file-modal-close-btn">✕ close</button>
+    </div>
+    <div id="file-issue-banner" class="file-issue-banner" style="display:none"></div>
+    <div id="file-modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal overlay: fixed-position, outside .shell, never wiped by tab/data refresh -->
+<div id="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div id="modal-box"></div>
+</div>
+
+<script>
+(()=>{
+const $content      = document.getElementById('content');
+const $modalOverlay = document.getElementById('modal-overlay');
+const $modalBox     = document.getElementById('modal-box');
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let tab = localStorage.getItem('oc-dash-tab') || 'activity', since = '1h', filters = {};
+// Sync the sidebar highlight to the restored tab on load
+document.querySelectorAll('#sidebar-nav button[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+let currentTableEvents = [];
+let activityEvents = [];
+let selectedEvent = null;
+let policiesData = { policies: [] };
+let policyEditorState = {};   // { [name]: { open, content, editing } }
+let policyYamlScrollTops = {}; // preserved across policy re-renders so YAML pre/textarea scroll doesn't jump
+let ksSectionScrollTops = {};  // same for kill switch section YAML viewers when only #ks-section is re-rendered
+let ksState = { exec: { active: false, remainingSeconds: null }, net: { active: false, remainingSeconds: null } };
+let ksClientCountdown = { exec: null, net: null };
+let ksCountdownInterval = null;
+let readmeCache = null;
+
+if (typeof mermaid !== 'undefined') {
+  mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: {
+    primaryColor: '#6366f1', primaryTextColor: '#e4e4e9', primaryBorderColor: '#6366f1',
+    lineColor: '#63636e', secondaryColor: '#1e1e2e', tertiaryColor: '#141417',
+    background: '#0c0c0e', mainBkg: '#141417', nodeBorder: '#6366f1',
+    clusterBkg: '#141417', clusterBorder: '#232329', titleColor: '#e4e4e9',
+    edgeLabelBackground: '#141417', nodeTextColor: '#e4e4e9',
+  }});
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+document.getElementById('sidebar-nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  tab = btn.dataset.tab;
+  localStorage.setItem('oc-dash-tab', tab);
+  filters = {};
+  closeModal();
+  window.scrollTo(0, 0);
+  document.querySelectorAll('#sidebar-nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  poll();
+});
+
+// Close modal on overlay backdrop click or Escape key
+$modalOverlay.addEventListener('click', e => { if (e.target === $modalOverlay) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('file-modal-overlay').style.display !== 'none') { closeFileModal(); }
+    else { closeModal(); }
+  }
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+function shortBin(p) { return p ? p.split('/').pop() : '?'; }
+function esc(s) { const d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+function setContent(html) {
+  const sy = window.scrollY;
+  $content.innerHTML = html;
+  if (sy > 0) requestAnimationFrame(() => window.scrollTo(0, sy));
+}
+function opBadge(op) {
+  if (op === 'write')  return '<span class="badge-write">write</span>';
+  if (op === 'delete') return '<span class="badge-delete">delete</span>';
+  return '<span class="badge-open">open</span>';
+}
+function policyDesc(name) {
+  const d = {
+    'oc-file-ops':        'File open / write / delete on workspace and sensitive paths',
+    'oc-tool-exec':       'Execution of tool binaries (curl, git, python, clawhub, etc.)',
+    'oc-llm-api-egress':  'Outbound TCP connections — LLM API egress',
+    'oc-skill-sandbox':   'Exec and file access originating from skills / clawhub',
+    'oc-ks-exec':         'Temporary lockout — blocks all subprocess/tool execution (execve). Auto-expires after 60s.',
+    'oc-ks-net':          'Temporary lockout — blocks all outbound TCP connections. Auto-expires after 60s.',
+  };
+  return d[name] || name;
+}
+// Stable identity key for an event — used to re-match after refresh
+function evKey(ev) {
+  if (!ev) return '';
+  return `${ev.time||''}|${ev.process||''}|${ev.path||ev.remote||ev.args||ev.kind||''}`;
+}
+
+// ─── Modal event detail ───────────────────────────────────────────────────────
+// Opens as a fixed-position centered overlay — never scrolls to bottom.
+function openModal(ev) {
+  selectedEvent = ev;
+  const policyName = ev.policy || '';
+  const mode = (policiesData.policies.find(p => p.name === policyName) || {}).mode || 'monitor';
+  const isNetEvent = !!(ev.remote);
+
+  let contentSection = '';
+  if (ev.content && ev.content !== 'CharBufErrorUnknown') {
+    const preview = String(ev.content).slice(0, 8192);
+    contentSection = `<h4 style="margin:14px 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">Content written to file</h4>
+      <pre class="drawer-pre" style="max-height:320px">${esc(preview)}${ev.contentTruncated ? '\n\n… [truncated — only first 4 KB captured by eBPF]' : ''}</pre>`;
+  }
+  let argsSection = '';
+  if (ev.args && ev.args.length > 90) {
+    argsSection = `<h4 style="margin:14px 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">Full arguments</h4>
+      <pre class="drawer-pre">${esc(ev.args)}</pre>`;
+  }
+
+  // Session context placeholder (filled async for net events)
+  const sessionCtxSection = isNetEvent ? `
+    <h4 style="margin:14px 0 6px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">Session context at this time</h4>
+    <div id="modal-session-ctx" class="session-ctx"><span style="color:var(--text3);font-size:11px">Fetching session context…</span></div>
+    <div class="payload-note">
+      ℹ For <strong>encrypted HTTPS</strong> connections the raw request payload is not visible at the kernel syscall level —
+      the session context above shows what the agent was doing when this connection was established.
+      For <strong>local HTTP</strong> (VLLM on :8000) a write-capture policy can expose raw bytes.
+    </div>` : '';
+
+  const rawJson = esc(JSON.stringify(ev, null, 2));
+  const title = `${esc(ev.kind || ev.operation || 'event')} · ${esc(shortBin(ev.process || ''))} · ${fmt(ev.time)}`;
+
+  $modalBox.innerHTML = `
+    <div class="drawer-header">
+      <h3>${title}</h3>
+      <button class="drawer-close" id="modal-close" title="Close (Esc)">✕ close</button>
+    </div>
+
+    <div class="drawer-grid">
+      <span class="drawer-key">Policy</span>
+      <span class="drawer-val">${esc(policyName || '—')} <span class="mode-badge ${mode}">${mode}</span></span>
+
+      <span class="drawer-key">Process</span>
+      <span class="drawer-val">${esc(ev.process || '—')}</span>
+
+      ${ev.pid != null ? `<span class="drawer-key">PID</span><span class="drawer-val">${esc(String(ev.pid))}${ev.ppid != null ? ` / ppid ${esc(String(ev.ppid))}` : ''}</span>` : ''}
+      ${ev.cwd ? `<span class="drawer-key">CWD</span><span class="drawer-val">${esc(ev.cwd)}</span>` : ''}
+      ${ev.path ? `<span class="drawer-key">Path</span><span class="drawer-val">${esc(ev.path)}</span>` : ''}
+      ${ev.operation ? `<span class="drawer-key">Operation</span><span class="drawer-val">${opBadge(ev.operation)}</span>` : ''}
+      ${ev.contentSize ? `<span class="drawer-key">Write size</span><span class="drawer-val">${esc(String(ev.contentSize))} bytes${ev.contentTruncated ? ' (truncated)' : ''}</span>` : ''}
+      ${ev.remote ? `<span class="drawer-key">Remote</span><span class="drawer-val">${esc(ev.remoteLabel || ev.remote)}</span>` : ''}
+      ${ev.proto ? `<span class="drawer-key">Protocol</span><span class="drawer-val">${esc(ev.proto)}</span>` : ''}
+      ${ev.sensitive ? `<span class="drawer-key">Sensitivity</span><span class="drawer-val" style="color:var(--amber)">Sensitive path</span>` : ''}
+      ${ev.outsideSkill ? `<span class="drawer-key">Sandbox</span><span class="drawer-val" style="color:var(--red)">Outside skill sandbox!</span>` : ''}
+    </div>
+
+    <p style="font-size:11px;color:var(--text3);margin-bottom:6px">${esc(policyDesc(policyName))}</p>
+
+    <div class="drawer-enforce">
+      <span style="font-size:12px;color:var(--text3)">Policy mode:</span>
+      <strong class="mode-badge ${mode}">${mode}</strong>
+      <button class="btn ${mode === 'enforce' ? 'danger' : ''}" id="modal-mode-btn">
+        Switch to ${mode === 'monitor' ? 'enforce' : 'monitor'}
+      </button>
+    </div>
+
+    ${contentSection}
+    ${argsSection}
+    ${sessionCtxSection}
+
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-size:11px;color:var(--text3);user-select:none">▶ Raw event JSON</summary>
+      <pre class="drawer-pre" style="max-height:220px">${rawJson}</pre>
+    </details>`;
+
+  $modalOverlay.style.display = 'flex';
+  document.getElementById('modal-close').onclick = closeModal;
+
+  const modeBtn = document.getElementById('modal-mode-btn');
+  if (modeBtn) {
+    modeBtn.onclick = async () => {
+      const newMode = mode === 'monitor' ? 'enforce' : 'monitor';
+      modeBtn.disabled = true;
+      modeBtn.textContent = 'Switching…';
+      const r = await fetch(`/api/policies/${encodeURIComponent(policyName)}/mode`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ mode: newMode }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        policiesData.policies.forEach(p => { if (p.name === policyName) p.mode = newMode; });
+        updateEnforcingBadge();
+        openModal(ev);
+      } else {
+        alert(d.error || 'Failed');
+        modeBtn.disabled = false;
+        modeBtn.textContent = `Switch to ${newMode}`;
+      }
+    };
+  }
+
+  // Async: fetch session context for network events
+  if (isNetEvent && ev.time) {
+    fetchSessionContext(ev.time).then(ctx => {
+      const el = document.getElementById('modal-session-ctx');
+      if (el) el.innerHTML = renderSessionContext(ctx);
+    });
+  }
+
+  highlightSelected();
+}
+
+function closeModal() {
+  selectedEvent = null;
+  $modalOverlay.style.display = 'none';
+  $modalBox.innerHTML = '';
+  highlightSelected();
+}
+
+// ─── Session context (LLM payload correlation) ────────────────────────────────
+async function fetchSessionContext(timeISO) {
+  try {
+    const r = await fetch(`/api/session-context?time=${encodeURIComponent(timeISO)}`);
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.events || [];
+  } catch { return []; }
+}
+
+function renderSessionContext(events) {
+  if (!events.length) {
+    return '<span style="color:var(--text3);font-size:11px">No session activity found in ±5 s window. Try expanding the time range or ensure a session is active.</span>';
+  }
+  return events.map(ev => {
+    let body = '';
+    if (ev.kind === 'user_message') {
+      body = `<span style="color:var(--text)">${esc((ev.text || '').slice(0, 600))}${ev.text && ev.text.length > 600 ? '…' : ''}</span>`;
+    } else if (ev.kind === 'tool_call') {
+      body = `<strong style="color:var(--accent)">${esc(ev.toolName)}</strong> <span style="color:var(--text2)">${esc((ev.input || '').slice(0, 400))}${ev.input && ev.input.length > 400 ? '…' : ''}</span>`;
+    } else if (ev.kind === 'tool_result') {
+      body = `<span style="color:var(--text3)">${esc(ev.toolName)} →</span> <span style="color:var(--text2)">${esc((ev.resultPreview || '').slice(0, 300))}${ev.resultPreview && ev.resultPreview.length > 300 ? '…' : ''}</span>`;
+    } else if (ev.kind === 'usage') {
+      body = `<span style="color:var(--text3)">tokens in=${ev.inputTokens || 0} out=${ev.outputTokens || 0}${ev.estimatedCost != null ? ` · $${ev.estimatedCost.toFixed(4)}` : ''}</span>`;
+    } else if (ev.kind === 'model_change') {
+      body = `<span style="color:var(--text3)">${esc(ev.provider || '')} / ${esc(ev.modelId || '')}</span>`;
+    } else {
+      body = `<span style="color:var(--text3)">${esc(JSON.stringify(ev).slice(0, 200))}</span>`;
+    }
+    return `<div class="session-ctx-item">
+      <span class="session-ctx-time">${fmt(ev.time)}</span>
+      <span class="session-ctx-kind">${esc(ev.kind)}</span>
+      ${body}
+    </div>`;
+  }).join('');
+}
+
+// Called after each render to re-highlight the selected row.
+// Does NOT re-render the modal — modal content is stable across refreshes.
+function restoreHighlight() {
+  if (!selectedEvent) return;
+  highlightSelected();
+}
+
+function highlightSelected() {
+  const key = evKey(selectedEvent);
+  document.querySelectorAll('.table-wrap tr.clickable').forEach(tr => {
+    const i = parseInt(tr.dataset.eventIndex, 10);
+    const ev = currentTableEvents[i];
+    tr.classList.toggle('selected', !!(key && ev && evKey(ev) === key));
+  });
+  document.querySelectorAll('.feed-item[data-feed-index]').forEach(fi => {
+    const i = parseInt(fi.dataset.feedIndex, 10);
+    const ev = activityEvents[i];
+    fi.classList.toggle('selected', !!(key && ev && evKey(ev) === key));
+  });
+}
+
+function updateEnforcingBadge() {
+  const any = (policiesData.policies || []).some(p => p.mode === 'enforce');
+  const el = document.getElementById('enforcing-badge');
+  if (el) el.style.display = any ? 'inline-block' : 'none';
+}
+
+// ─── Quick filter definitions ─────────────────────────────────────────────────
+const QUICK_FILTERS = {
+  fileops: [
+    { label: 'Credentials dir',    field: 'path',      value: '.openclaw/credentials' },
+    { label: 'API keys / config',  field: 'path',      value: 'openclaw.json' },
+    { label: 'SSH keys',           field: 'path',      value: '.ssh' },
+    { label: 'Cloud auth',         field: 'path',      value: '.aws' },
+    { label: 'Writes only',        field: 'operation', value: 'write' },
+    { label: 'Deletes only',       field: 'operation', value: 'delete' },
+    { label: 'Sensitive',          field: 'path',      value: 'openclaw' },
+  ],
+  tools: [
+    { label: 'curl',       field: 'q', value: 'curl' },
+    { label: 'bash / sh',  field: 'q', value: 'bash' },
+    { label: 'python',     field: 'q', value: 'python' },
+    { label: 'git',        field: 'q', value: 'git' },
+    { label: 'clawhub',   field: 'q', value: 'clawhub' },
+    { label: 'node',       field: 'q', value: '/node ' },
+  ],
+  llm: [
+    { label: 'Unknown egress',   field: 'unknown', value: '1' },
+    { label: 'Local VLLM :8000', field: 'remote',  value: ':8000' },
+    { label: 'OpenClaw GW',      field: 'remote',  value: ':18789' },
+  ],
+  activity: [
+    { label: 'Tool calls',     field: 'kind', value: 'tool_call' },
+    { label: 'User messages',  field: 'kind', value: 'user_message' },
+    { label: 'File events',    field: 'kind', value: 'file' },
+    { label: 'Exec events',    field: 'kind', value: 'exec' },
+    { label: 'Network events', field: 'kind', value: 'net' },
+  ],
+  skills: [
+    { label: 'Critical only',  field: 'flag', value: 'critical' },
+    { label: 'clawhub',       field: 'q',    value: 'clawhub' },
+  ],
+};
+
+function quickFilterChips(type) {
+  const chips = QUICK_FILTERS[type] || [];
+  if (!chips.length) return '';
+  const html = chips.map(c => {
+    const active = filters[c.field] === c.value ? ' active' : '';
+    return `<button class="qfilt${active}" data-field="${esc(c.field)}" data-value="${esc(c.value)}">${esc(c.label)}</button>`;
+  }).join('');
+  return `<div class="quick-filters"><span class="qlabel">Quick filters:</span>${html}</div>`;
+}
+
+function bindQuickFilters() {
+  document.querySelectorAll('.qfilt').forEach(btn => {
+    btn.onclick = () => {
+      const { field, value } = btn.dataset;
+      if (filters[field] === value) {
+        delete filters[field];
+        // sync text input if present
+        const inp = document.querySelector(`.controls input[data-filter="${field}"]`);
+        if (inp) inp.value = '';
+      } else {
+        filters[field] = value;
+        const inp = document.querySelector(`.controls input[data-filter="${field}"]`);
+        if (inp) inp.value = value;
+      }
+      poll();
+    };
+  });
+}
+
+// ─── Controls bar ─────────────────────────────────────────────────────────────
+function rangeButtons() {
+  return ['15m', '1h', '6h', '24h', ''].map(v =>
+    `<button data-since="${v}" class="${since === v ? 'active' : ''}">${v || 'All'}</button>`
+  ).join('');
+}
+function controls(type) {
+  let inp = '';
+  if (type === 'tools')   inp = `<input type="text" placeholder="Search process / args…" data-filter="q" value="${esc(filters.q || '')}">`;
+  if (type === 'llm')     inp = `<input type="text" placeholder="Filter remote address…" data-filter="remote" value="${esc(filters.remote || '')}">`;
+  if (type === 'fileops') inp = `<input type="text" placeholder="Filter path…" data-filter="path" value="${esc(filters.path || '')}">`;
+  if (type === 'skills')  inp = `<input type="text" placeholder="Filter path…" data-filter="path" value="${esc(filters.path || '')}">`;
+  return `<div class="controls"><div class="range">${rangeButtons()}</div>${inp}</div>${quickFilterChips(type)}`;
+}
+function bindControls() {
+  document.querySelectorAll('.controls .range button').forEach(b => {
+    b.onclick = () => {
+      since = b.dataset.since;
+      document.querySelectorAll('.controls .range button').forEach(x => x.classList.toggle('active', x.dataset.since === since));
+      poll();
+    };
+  });
+  document.querySelectorAll('.controls input[data-filter]').forEach(inp => {
+    let t;
+    inp.oninput = () => { clearTimeout(t); t = setTimeout(() => { filters[inp.dataset.filter] = inp.value; poll(); }, 300); };
+  });
+  bindQuickFilters();
+}
+
+// ─── Row / feed click binding ──────────────────────────────────────────────────
+function rowClickHandler(ev) {
+  if (!ev) return;
+  if (selectedEvent && evKey(ev) === evKey(selectedEvent)) { closeModal(); return; }
+  openModal(ev);
+}
+
+function bindRowClicks() {
+  document.querySelectorAll('.table-wrap tr.clickable').forEach(tr => {
+    tr.onclick = () => rowClickHandler(currentTableEvents[parseInt(tr.dataset.eventIndex, 10)]);
+  });
+  restoreHighlight();
+}
+
+function bindFeedClicks() {
+  document.querySelectorAll('.feed-item[data-feed-index]').forEach(fi => {
+    fi.onclick = () => rowClickHandler(activityEvents[parseInt(fi.dataset.feedIndex, 10)]);
+  });
+  restoreHighlight();
+}
+
+// ─── Table renderers ──────────────────────────────────────────────────────────
+function mkRow(r, i, cols, extraClass) {
+  const cells = cols.map(c => `<td class="${c.cls || ''}">${c.render ? c.render(r) : esc(String(r[c.key] ?? '—'))}</td>`).join('');
+  return `<tr class="clickable ${extraClass || ''}" data-event-index="${i}">${cells}</tr>`;
+}
+function mkHead(cols) {
+  return '<thead><tr>' + cols.map(c => `<th>${c.label}</th>`).join('') + '</tr></thead>';
+}
+function renderTbl(cols, rows, footer, rowClassFn) {
+  if (!rows.length) return `<div class="table-wrap"><div class="empty">No events.</div></div>`;
+  const body = rows.map((r, i) => mkRow(r, i, cols, rowClassFn ? rowClassFn(r) : '')).join('');
+  return `<div class="table-wrap"><table>${mkHead(cols)}<tbody>${body}</tbody></table><div class="footer">${esc(footer)}</div></div>`;
+}
+
+// ─── Render: About / README ──────────────────────────────────────────────────
+async function renderAbout(md) {
+  const renderer = new marked.Renderer();
+  const origCode = renderer.code.bind(renderer);
+  const mermaidBlocks = [];
+  renderer.code = function({ text, lang }) {
+    if (lang === 'mermaid') {
+      const id = `mermaid-${mermaidBlocks.length}`;
+      mermaidBlocks.push({ id, text });
+      return `<div class="mermaid" id="${id}"></div>`;
+    }
+    return origCode({ text, lang });
+  };
+  const html = marked.parse(md, { renderer, gfm: true, breaks: false });
+  setContent(`<div class="md-body">${html}</div>`);
+  if (typeof mermaid !== 'undefined' && mermaidBlocks.length) {
+    for (const { id, text } of mermaidBlocks) {
+      try {
+        const { svg } = await mermaid.render(id + '-svg', text);
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = svg;
+      } catch (e) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = `<pre style="color:var(--red);font-size:11px">${esc(e.message)}</pre>`;
+      }
+    }
+  }
+}
+
+// ─── Render: Activity Feed ────────────────────────────────────────────────────
+function renderActivity(data) {
+  activityEvents = data.events || [];
+  const ctrl = controls('activity');
+  if (!activityEvents.length) {
+    setContent(ctrl + '<div class="empty">No activity in this time range.</div>');
+    bindControls();
+    restoreHighlight();
+    return;
+  }
+  const feedHtml = activityEvents.map((ev, i) => {
+    const severity = ev.severity === 'critical' ? 'severity-critical' : ev.severity === 'notable' ? 'severity-notable' : '';
+    const src = ev.source === 'session' ? 'session' : 'tetragon';
+    const kind = ev.kind || ev.type || 'event';
+    let body = '';
+    if (ev.source === 'session') {
+      if (ev.kind === 'user_message')  body = esc((ev.text || '').slice(0, 140)) + (ev.text && ev.text.length > 140 ? '…' : '');
+      else if (ev.kind === 'tool_call')   body = `<span class="mono">${esc(ev.toolName)}</span> ${esc((ev.input || '').slice(0, 80))}${ev.input && ev.input.length > 80 ? '…' : ''}`;
+      else if (ev.kind === 'tool_result') body = `<span class="mono">${esc(ev.toolName)}</span> → ${esc((ev.resultPreview || '').slice(0, 60))}${ev.resultPreview && ev.resultPreview.length > 60 ? '…' : ''}`;
+      else if (ev.kind === 'usage')       body = `tokens in=${ev.inputTokens || 0} out=${ev.outputTokens || 0} cost=$${(ev.estimatedCost || 0).toFixed(4)}`;
+      else if (ev.kind === 'model_change') body = `${esc(ev.provider || '')} / ${esc(ev.modelId || '')}`;
+      else body = esc(JSON.stringify(ev).slice(0, 100));
+    } else {
+      if (ev.kind === 'exec')
+        body = `<span class="mono">${esc(shortBin(ev.process))}</span> ${esc((ev.args || '').slice(0, 80))}${ev.args && ev.args.length > 80 ? '…' : ''}`;
+      else if (ev.kind === 'net')
+        body = esc(ev.remoteLabel || ev.remote || '') + (ev.unknownEgress ? ' <span style="color:var(--amber)">(unknown egress)</span>' : '');
+      else if (ev.kind === 'file')
+        body = opBadge(ev.operation || 'open') + ' <span class="mono">' + esc(ev.path) + '</span>'
+          + (ev.sensitive ? ' <span style="color:var(--amber)">sensitive</span>' : '')
+          + (ev.outsideSkill && ev.fromSkill ? ' <span style="color:var(--red)">skill outside sandbox</span>' : '');
+      else body = esc(shortBin(ev.process)) + ' ' + esc(ev.path || ev.remote || '');
+    }
+    return `<div class="feed-item ${severity}" data-feed-index="${i}"><span class="time">${fmt(ev.time)}</span><span class="kind"><span class="tag ${src}">${src}</span> ${esc(kind)}</span><span class="body">${body}</span></div>`;
+  }).join('');
+
+  setContent(ctrl + `<div class="feed">${feedHtml}</div><div class="table-wrap"><div class="footer">${data.total} events</div></div>`);
+  bindControls();
+  bindFeedClicks();
+}
+
+// ─── Render: LLM / API Calls ──────────────────────────────────────────────────
+function renderLLM(data) {
+  currentTableEvents = data.events || [];
+  const cols = [
+    { key: 'time',        label: 'Time',        cls: 'time',     render: r => fmt(r.time) },
+    { key: 'process',     label: 'Process',      cls: 'mono hl', render: r => esc(shortBin(r.process)) },
+    { key: 'remoteLabel', label: 'Destination',  cls: 'mono',    render: r => `<span style="color:var(--violet)">${esc(r.remoteLabel || r.remote)}</span>${r.unknownEgress ? ' <span style="color:var(--amber)">(unknown)</span>' : ''}` },
+    { key: 'remote',      label: 'Raw address',  cls: 'mono' },
+  ];
+  setContent(controls('llm') + renderTbl(cols, currentTableEvents, currentTableEvents.length + ' connections'));
+  bindControls();
+  bindRowClicks();
+}
+
+// ─── Render: Tool Execution ───────────────────────────────────────────────────
+function renderTools(data) {
+  currentTableEvents = data.events || [];
+  const cols = [
+    { key: 'time',    label: 'Time',      cls: 'time',     render: r => fmt(r.time) },
+    { key: 'process', label: 'Process',   cls: 'mono hl',  render: r => esc(shortBin(r.process)) },
+    { key: 'args',    label: 'Arguments', cls: 'mono',     render: r => `<span title="${esc(r.args || '')}">${esc((r.args || '').slice(0, 90))}${r.args && r.args.length > 90 ? '…' : ''}</span>` },
+    { key: 'pid',     label: 'PID',       cls: 'mono' },
+    { key: 'cwd',     label: 'CWD',       cls: 'mono' },
+  ];
+  setContent(controls('tools') + renderTbl(cols, currentTableEvents, currentTableEvents.length + ' execs'));
+  bindControls();
+  bindRowClicks();
+}
+
+// ─── Render: File Operations ──────────────────────────────────────────────────
+function renderFileOps(data) {
+  currentTableEvents = data.events || [];
+  const cols = [
+    { key: 'time',      label: 'Time',            cls: 'time',    render: r => fmt(r.time) },
+    { key: 'operation', label: 'Op',                               render: r => opBadge(r.operation || 'open') },
+    { key: 'process',   label: 'Process',          cls: 'mono hl', render: r => esc(shortBin(r.process)) },
+    { key: 'path',      label: 'Path',             cls: 'mono',    render: r =>
+        `<span style="color:var(--rose)">${esc(r.path)}</span>` +
+        (r.sensitive ? ' <span style="color:var(--amber)">sensitive</span>' : '') +
+        (r.outsideSkill && r.fromSkill ? ' <span style="color:var(--red)">skill</span>' : '') },
+    { key: 'content',   label: 'Content preview',  cls: 'mono',    render: r =>
+        r.content && r.content !== 'CharBufErrorUnknown'
+          ? esc(String(r.content).slice(0, 100)) + (r.content.length > 100 ? '…' : '')
+          : '—' },
+    { key: 'severity',  label: 'Sev',                              render: r => r.severity && r.severity !== 'normal' ? `<span style="color:${r.severity === 'critical' ? 'var(--red)' : 'var(--amber)'}">${esc(r.severity)}</span>` : '—' },
+  ];
+  const rowClass = r => (r.severity && r.severity !== 'normal') ? 'severity-' + r.severity : '';
+  setContent(controls('fileops') + renderTbl(cols, currentTableEvents, currentTableEvents.length + ' file events', rowClass));
+  bindControls();
+  bindRowClicks();
+}
+
+// ─── Render: Skill & Plugin Security ──────────────────────────────────────────
+function renderSkills(data) {
+  currentTableEvents = data.events || [];
+  const cols = [
+    { key: 'time',    label: 'Time',         cls: 'time',   render: r => fmt(r.time) },
+    { key: 'kind',    label: 'Kind',                        render: r => r.kind || '—' },
+    { key: 'process', label: 'Process',      cls: 'mono',   render: r => esc(shortBin(r.process)) },
+    { key: 'path',    label: 'Path / Remote',cls: 'mono',   render: r => esc(r.path || r.remote || r.remoteLabel || '—') },
+    { key: 'severity',label: 'Flag',                        render: r =>
+        r.outsideSkill && r.sensitive ? '<span style="color:var(--red)">outside sandbox</span>'
+        : r.sensitive ? '<span style="color:var(--amber)">sensitive</span>'
+        : '—' },
+  ];
+  const rowClass = r => (r.outsideSkill && r.sensitive) ? 'severity-critical' : r.sensitive ? 'severity-notable' : '';
+  setContent(controls('skills') + renderTbl(cols, currentTableEvents, currentTableEvents.length + ' skill-related events', rowClass));
+  bindControls();
+  bindRowClicks();
+}
+
+// ─── Render: Policies ─────────────────────────────────────────────────────────
+function renderPolicies() {
+  // Preserve in-progress textarea edits before re-rendering
+  document.querySelectorAll('textarea.policy-textarea').forEach(ta => {
+    const name = ta.id.replace('yaml-editor-', '');
+    if (policyEditorState[name]) policyEditorState[name].content = ta.value;
+  });
+
+  // Preserve scroll position inside each policy's YAML pre/textarea so the little window doesn't snap to top on refresh
+  document.querySelectorAll('.policy-card').forEach(card => {
+    const btn = card.querySelector('.policy-yaml-btn[data-name]');
+    if (!btn) return;
+    const el = card.querySelector('.yaml-pre') || card.querySelector('.policy-textarea');
+    if (el) policyYamlScrollTops[btn.dataset.name] = el.scrollTop;
+  });
+
+  const pols  = (policiesData.policies || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+  const ov    = policiesData.overview || {};
+  const polErr = policiesData.policiesError;
+  const total = (ov.policies || pols).reduce((s, p) => s + (p.count24h || 0), 0);
+  const polMap = {
+    'oc-llm-api-egress': { label: 'LLM/API Egress',   tag: 'net'  },
+    'oc-tool-exec':      { label: 'Tool Execution',    tag: 'exec' },
+    'oc-file-ops':       { label: 'File Operations',   tag: 'file' },
+    'oc-skill-sandbox':  { label: 'Skill Sandbox',     tag: 'skill'},
+  };
+  const anyEnforce = pols.some(p => p.mode === 'enforce');
+
+  let html = `<div class="cards">
+    <div class="card"><div class="label">Tetragon</div><div class="value"><span class="dot ${ov.status || 'down'}"></span>${ov.status === 'up' ? 'Active' : 'Down'}</div><div class="sub">Last event: ${fmt(ov.lastEventTime)}</div></div>
+    <div class="card"><div class="label">Events (24h)</div><div class="value">${total.toLocaleString()}</div><div class="sub">${pols.length} policies loaded</div></div>
+  </div>`;
+
+  if (polErr) {
+    html += `<div class="policy-warn" style="background:rgba(248,113,113,.12);border-color:var(--red)">
+      ⚠ <strong>Policy list unavailable</strong> — the dashboard cannot query Tetragon right now.<br>
+      <span style="font-size:12px">This usually means an <strong>enforced policy with Sigkill</strong> is blocking the <code>tetra</code> or <code>sh</code> process that the server uses internally. To recover, run in your terminal:<br>
+      <code style="display:block;margin:6px 0;padding:4px 8px;background:rgba(0,0,0,.3);border-radius:4px">cp /usr/local/bin/tetra /tmp/tet &amp;&amp; /tmp/tet tp list</code>
+      Then set the enforced policy back to monitor:<br>
+      <code style="display:block;margin:6px 0;padding:4px 8px;background:rgba(0,0,0,.3);border-radius:4px">/tmp/tet tp set-mode &lt;policy-name&gt; monitor</code>
+      </span>
+      <span style="font-size:11px;color:var(--text3)">Error: ${esc(polErr)}</span>
+    </div>`;
+  }
+
+  if (anyEnforce) {
+    html += `<div class="policy-warn">⚠ One or more policies are in <strong>enforce</strong> mode — matching operations will be blocked or the process killed.</div>`;
+  }
+
+  pols.forEach(p => {
+    const d  = polMap[p.name] || { label: p.name, tag: 'exec' };
+    const st = policyEditorState[p.name] || {};
+
+    let editorHtml = '';
+    if (st.open && st.content !== undefined) {
+      if (st.editing) {
+        editorHtml = `
+          <textarea class="policy-textarea" id="yaml-editor-${esc(p.name)}">${esc(st.content)}</textarea>
+          <div class="policy-save-row">
+            <button class="btn primary policy-save-btn" data-name="${esc(p.name)}">Save &amp; Reload</button>
+            <button class="btn policy-cancel-edit-btn" data-name="${esc(p.name)}">Cancel</button>
+            <span id="save-msg-${esc(p.name)}"></span>
+          </div>`;
+      } else {
+        editorHtml = `
+          <pre class="yaml-pre">${esc(st.content)}</pre>
+          <div class="policy-save-row">
+            <button class="btn primary policy-edit-btn" data-name="${esc(p.name)}">Edit YAML</button>
+            <button class="btn policy-hide-btn" data-name="${esc(p.name)}">Hide</button>
+          </div>`;
+      }
+    }
+
+    html += `<div class="policy-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <span class="tag ${d.tag}">${d.label}</span>
+          <span class="mono" style="margin:0 6px">${esc(p.name)}</span>
+          <span class="mode-badge ${p.mode}">${p.mode}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span style="color:var(--text3);font-size:12px">${p.count24h != null ? p.count24h.toLocaleString() + ' events (24h)' : ''}</span>
+          <button class="btn policy-mode-btn" data-name="${esc(p.name)}" data-mode="${p.mode === 'monitor' ? 'enforce' : 'monitor'}">
+            Switch to ${p.mode === 'monitor' ? 'enforce' : 'monitor'}
+          </button>
+          <button class="btn policy-yaml-btn" data-name="${esc(p.name)}">${st.open ? '▲ YAML' : '▼ YAML'}</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:6px">${esc(policyDesc(p.name))}</p>
+      ${editorHtml}
+    </div>`;
+  });
+
+  // Append kill switch section placeholder (filled by renderKsSection)
+  html += `<div id="ks-section"></div>`;
+  setContent(html);
+  renderKsSection();
+
+  // YAML show/hide toggle
+  document.querySelectorAll('.policy-yaml-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const name = btn.dataset.name;
+      const st = policyEditorState[name] || {};
+      if (st.open) {
+        policyEditorState[name] = { ...st, open: false, editing: false };
+      } else {
+        if (st.content === undefined) {
+          const r = await fetch(`/api/policies/${encodeURIComponent(name)}/yaml`);
+          policyEditorState[name] = { open: true, content: r.ok ? await r.text() : 'Not found', editing: false };
+        } else {
+          policyEditorState[name] = { ...st, open: true, editing: false };
+        }
+      }
+      renderPolicies();
+    };
+  });
+
+  // Edit button (show textarea)
+  document.querySelectorAll('.policy-edit-btn').forEach(btn => {
+    btn.onclick = () => {
+      policyEditorState[btn.dataset.name] = { ...(policyEditorState[btn.dataset.name] || {}), editing: true };
+      renderPolicies();
+    };
+  });
+
+  // Cancel edit
+  document.querySelectorAll('.policy-cancel-edit-btn').forEach(btn => {
+    btn.onclick = () => {
+      policyEditorState[btn.dataset.name] = { ...(policyEditorState[btn.dataset.name] || {}), editing: false };
+      renderPolicies();
+    };
+  });
+
+  // Hide YAML section
+  document.querySelectorAll('.policy-hide-btn').forEach(btn => {
+    btn.onclick = () => {
+      const st = policyEditorState[btn.dataset.name] || {};
+      policyEditorState[btn.dataset.name] = { ...st, open: false, editing: false };
+      renderPolicies();
+    };
+  });
+
+  // Save & Reload
+  document.querySelectorAll('.policy-save-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const name = btn.dataset.name;
+      const ta = document.getElementById(`yaml-editor-${name}`);
+      if (!ta) return;
+      const content = ta.value;
+      const msgEl = document.getElementById(`save-msg-${name}`);
+      if (msgEl) { msgEl.className = ''; msgEl.textContent = 'Saving…'; }
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/api/policies/${encodeURIComponent(name)}/yaml`, {
+          method: 'PUT', headers: { 'Content-Type': 'text/plain' }, body: content,
+        });
+        const d = await r.json();
+        if (d.ok) {
+          policyEditorState[name] = { open: true, content, editing: false };
+          renderPolicies();
+          const newMsg = document.getElementById(`save-msg-${name}`);
+          if (newMsg) { newMsg.className = 'save-msg'; newMsg.textContent = '✓ Saved & reloaded'; }
+        } else {
+          if (msgEl) { msgEl.className = 'save-err'; msgEl.textContent = d.error || 'Failed'; }
+          btn.disabled = false;
+        }
+      } catch (e) {
+        if (msgEl) { msgEl.className = 'save-err'; msgEl.textContent = e.message || 'Error'; }
+        btn.disabled = false;
+      }
+    };
+  });
+
+  // Mode toggle
+  document.querySelectorAll('.policy-mode-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const name = btn.dataset.name;
+      const mode = btn.dataset.mode;
+      btn.disabled = true;
+      const r = await fetch(`/api/policies/${encodeURIComponent(name)}/mode`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        policiesData.policies.forEach(p => { if (p.name === name) p.mode = mode; });
+        updateEnforcingBadge();
+        renderPolicies();
+      } else {
+        alert(d.error || 'Failed');
+        btn.disabled = false;
+      }
+    };
+  });
+
+  // Restore scroll inside each policy's YAML pre/textarea after layout
+  requestAnimationFrame(() => {
+    Object.entries(policyYamlScrollTops).forEach(([name, top]) => {
+      const card = document.querySelector(`.policy-yaml-btn[data-name="${CSS.escape(name)}"]`)?.closest('.policy-card');
+      const el = card?.querySelector('.yaml-pre') || card?.querySelector('.policy-textarea');
+      if (el) el.scrollTop = top;
+    });
+    policyYamlScrollTops = {};
+  });
+}
+
+// ─── Kill switch policy section on Policies tab ───────────────────────────────
+const KS_DEFS = [
+  { id: 'exec', name: 'oc-ks-exec', label: 'Exec Lockout',    tag: 'exec',
+    desc: 'Override execve() for common tool binaries — curl, bash, git, python, node, etc. OpenClaw gateway stays alive but cannot spawn any subprocesses.' },
+  { id: 'net',  name: 'oc-ks-net',  label: 'Network Lockout', tag: 'net',
+    desc: 'Override security_socket_connect() for OpenClaw node/curl/wget processes — all outbound TCP connections return EPERM. Gateway stays alive but is fully network-isolated.' },
+];
+
+function renderKsSection() {
+  const el = document.getElementById('ks-section');
+  if (!el) return;
+
+  // Preserve scroll inside each kill switch card's YAML pre/textarea before re-render
+  el.querySelectorAll('.ks-policy-card').forEach(card => {
+    const btn = card.querySelector('.policy-yaml-btn[data-name]');
+    if (!btn) return;
+    const scrollEl = card.querySelector('.yaml-pre') || card.querySelector('.policy-textarea');
+    if (scrollEl) ksSectionScrollTops[btn.dataset.name] = scrollEl.scrollTop;
+  });
+
+  let html = `
+    <div class="ks-section-head">⏱ Temporary Lockouts <span style="font-weight:400;text-transform:none;font-size:11px">(auto-expire after 60 s)</span></div>
+    <p class="ks-section-desc">Each lockout loads a Tetragon policy in enforce mode and auto-expires after 60 seconds — OpenClaw keeps running but is effectively bricked for the duration. Click early to end sooner.</p>`;
+
+  KS_DEFS.forEach(({ id, name, label, tag, desc }) => {
+    const state    = ksState[id] || { active: false, remainingSeconds: null };
+    const st       = policyEditorState[name] || {};
+    const toggling = ksToggling[id];
+    const countdown = ksClientCountdown[id];
+    const activeLabel = countdown != null
+      ? `Active — <span class="ks-countdown">${countdown}s remaining</span>`
+      : 'Active';
+
+    let editorHtml = '';
+    if (st.open && st.content !== undefined) {
+      if (st.editing) {
+        editorHtml = `
+          <textarea class="policy-textarea" id="yaml-editor-${esc(name)}">${esc(st.content)}</textarea>
+          <div class="policy-save-row">
+            <button class="btn primary policy-save-btn" data-name="${esc(name)}">Save &amp; Reload</button>
+            <button class="btn policy-cancel-edit-btn" data-name="${esc(name)}">Cancel</button>
+            <span id="save-msg-${esc(name)}"></span>
+          </div>`;
+      } else {
+        editorHtml = `
+          <pre class="yaml-pre">${esc(st.content)}</pre>
+          <div class="policy-save-row">
+            <button class="btn primary policy-edit-btn" data-name="${esc(name)}">Edit YAML</button>
+            <button class="btn policy-hide-btn" data-name="${esc(name)}">Hide</button>
+          </div>`;
+      }
+    }
+
+    html += `<div class="policy-card ks-policy-card ${state.active ? 'ks-active' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <span class="tag ${tag}">${label}</span>
+          <span class="mono" style="margin:0 6px">${esc(name)}</span>
+          <span style="font-size:12px;${state.active ? 'color:var(--red);font-weight:600' : 'color:var(--text3)'}">
+            ${state.active ? activeLabel : 'Inactive'}
+          </span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn ${state.active ? '' : 'danger'} ks-toggle-btn" data-kstype="${esc(id)}" ${toggling ? 'disabled' : ''}>
+            ${toggling ? 'Working…' : state.active ? 'End lockout early' : 'Lockout for 60s'}
+          </button>
+          <button class="btn policy-yaml-btn" data-name="${esc(name)}">${st.open ? '▲ YAML' : '▼ YAML'}</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:6px">${esc(desc)}</p>
+      ${editorHtml}
+    </div>`;
+  });
+
+  el.innerHTML = html;
+
+  // Kill switch toggle buttons
+  el.querySelectorAll('.ks-toggle-btn').forEach(btn => {
+    btn.onclick = () => toggleKillSwitch(btn.dataset.kstype);
+  });
+
+  // YAML toggle (reuse same logic as main policies)
+  el.querySelectorAll('.policy-yaml-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const name = btn.dataset.name;
+      const st = policyEditorState[name] || {};
+      if (st.open) {
+        policyEditorState[name] = { ...st, open: false, editing: false };
+      } else {
+        if (st.content === undefined) {
+          const r = await fetch(`/api/policies/${encodeURIComponent(name)}/yaml`);
+          policyEditorState[name] = { open: true, content: r.ok ? await r.text() : 'Not found', editing: false };
+        } else {
+          policyEditorState[name] = { ...st, open: true, editing: false };
+        }
+      }
+      renderKsSection();
+    };
+  });
+
+  el.querySelectorAll('.policy-edit-btn').forEach(btn => {
+    btn.onclick = () => {
+      policyEditorState[btn.dataset.name] = { ...(policyEditorState[btn.dataset.name] || {}), editing: true };
+      renderKsSection();
+    };
+  });
+  el.querySelectorAll('.policy-cancel-edit-btn').forEach(btn => {
+    btn.onclick = () => {
+      policyEditorState[btn.dataset.name] = { ...(policyEditorState[btn.dataset.name] || {}), editing: false };
+      renderKsSection();
+    };
+  });
+  el.querySelectorAll('.policy-hide-btn').forEach(btn => {
+    btn.onclick = () => {
+      const st = policyEditorState[btn.dataset.name] || {};
+      policyEditorState[btn.dataset.name] = { ...st, open: false, editing: false };
+      renderKsSection();
+    };
+  });
+  el.querySelectorAll('.policy-save-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const name = btn.dataset.name;
+      const ta = document.getElementById(`yaml-editor-${name}`);
+      if (!ta) return;
+      const content = ta.value;
+      const msgEl = document.getElementById(`save-msg-${name}`);
+      if (msgEl) { msgEl.className = ''; msgEl.textContent = 'Saving…'; }
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/api/policies/${encodeURIComponent(name)}/yaml`, {
+          method: 'PUT', headers: { 'Content-Type': 'text/plain' }, body: content,
+        });
+        const d = await r.json();
+        if (d.ok) {
+          policyEditorState[name] = { open: true, content, editing: false };
+          renderKsSection();
+        } else {
+          if (msgEl) { msgEl.className = 'save-err'; msgEl.textContent = d.error || 'Failed'; }
+          btn.disabled = false;
+        }
+      } catch (e) {
+        if (msgEl) { msgEl.className = 'save-err'; msgEl.textContent = e.message || 'Error'; }
+        btn.disabled = false;
+      }
+    };
+  });
+
+  // Restore scroll inside kill switch YAML pre/textarea after layout
+  requestAnimationFrame(() => {
+    Object.entries(ksSectionScrollTops).forEach(([name, top]) => {
+      const card = el.querySelector(`.policy-yaml-btn[data-name="${CSS.escape(name)}"]`)?.closest('.ks-policy-card');
+      const scrollEl = card?.querySelector('.yaml-pre') || card?.querySelector('.policy-textarea');
+      if (scrollEl) scrollEl.scrollTop = top;
+    });
+    ksSectionScrollTops = {};
+  });
+}
+
+// ─── File Viewer Modal ─────────────────────────────────────────────────────────
+document.getElementById('file-modal-close-btn').onclick = closeFileModal;
+document.getElementById('file-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('file-modal-overlay')) closeFileModal();
+});
+
+function closeFileModal() {
+  document.getElementById('file-modal-overlay').style.display = 'none';
+  document.getElementById('file-modal-body').innerHTML = '';
+  document.getElementById('file-issue-banner').style.display = 'none';
+}
+
+async function openFileModal(skillDir, filePath, lineNumber, findingTitle, findingDesc) {
+  const overlay = document.getElementById('file-modal-overlay');
+  document.getElementById('file-modal-title').textContent = filePath;
+  document.getElementById('file-modal-sub').textContent = lineNumber
+    ? `Line ${lineNumber}${findingTitle ? ' · ' + findingTitle : ''}`
+    : (findingTitle || '');
+  const banner = document.getElementById('file-issue-banner');
+  if (findingTitle || findingDesc) {
+    banner.style.display = '';
+    const lineRef = lineNumber ? ` at line ${lineNumber}` : '';
+    banner.innerHTML = `<strong style="color:var(--red)">⚠ Issue${lineRef}:</strong> ${esc(findingTitle || '')}${findingDesc ? ' — ' + esc(findingDesc) : ''}`;
+  } else {
+    banner.style.display = 'none';
+  }
+  const body = document.getElementById('file-modal-body');
+  body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">Loading…</div>';
+  overlay.style.display = 'flex';
+  try {
+    const r = await fetch(`/api/scanner/file?path=${encodeURIComponent(skillDir)}&file=${encodeURIComponent(filePath)}`);
+    if (!r.ok) throw new Error(`Cannot read file (${r.status})`);
+    const text = await r.text();
+    const lines = text.split('\n');
+    // Show context window: 30 lines before + all after, max 200 lines total
+    const total = lines.length;
+    const startLine = Math.max(1, (lineNumber || 1) - 30);
+    const endLine = Math.min(total, startLine + 200);
+    const shown = lines.slice(startLine - 1, endLine);
+    const prefix = startLine > 1 ? `<div style="padding:6px 16px;font-size:10px;color:var(--text3);background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)">… ${startLine - 1} lines above · <button onclick="renderAllLines(${JSON.stringify(skillDir)},${JSON.stringify(filePath)},${lineNumber || 0})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px;padding:0">Show all ${total} lines</button></div>` : '';
+    body.innerHTML = prefix + `<div class="file-lines" id="file-lines-container">${
+      shown.map((line, i) => {
+        const num = startLine + i;
+        const isHl = num === lineNumber;
+        return `<div class="file-line${isHl ? ' highlighted' : ''}" id="fl-${num}">` +
+          `<span class="file-line-num">${num}</span>` +
+          `<span class="file-line-content">${esc(line) || ' '}</span></div>`;
+      }).join('')
+    }</div>`;
+    if (lineNumber) {
+      const t = document.getElementById(`fl-${lineNumber}`);
+      if (t) setTimeout(() => t.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80);
+    }
+  } catch (e) {
+    body.innerHTML = `<div style="padding:24px;color:var(--red)">${esc(e.message)}</div>`;
+  }
+}
+
+window.renderAllLines = async function(skillDir, filePath, lineNumber) {
+  const body = document.getElementById('file-modal-body');
+  const savedScrollTop = body.scrollTop;
+  body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Loading full file…</div>';
+  try {
+    const r = await fetch(`/api/scanner/file?path=${encodeURIComponent(skillDir)}&file=${encodeURIComponent(filePath)}`);
+    const text = await r.text();
+    const lines = text.split('\n');
+    body.innerHTML = `<div class="file-lines">${lines.map((line, i) => {
+      const num = i + 1, isHl = num === lineNumber;
+      return `<div class="file-line${isHl ? ' highlighted' : ''}" id="fl-${num}"><span class="file-line-num">${num}</span><span class="file-line-content">${esc(line) || ' '}</span></div>`;
+    }).join('')}</div>`;
+    requestAnimationFrame(() => { body.scrollTop = savedScrollTop; });
+    if (lineNumber) {
+      const t = document.getElementById(`fl-${lineNumber}`);
+      if (t) setTimeout(() => t.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80);
+    }
+  } catch (e) {
+    body.innerHTML = `<div style="padding:24px;color:var(--red)">${esc(e.message)}</div>`;
+  }
+};
+
+// ─── Scanner Config ─────────────────────────────────────────────────────────────
+let scannerConfig = { policy: 'balanced', useBehavioral: false, useAiDefense: false, aiDefenseApiKey: '', aiDefenseApiUrl: '' };
+let scannerSettingsOpen = false;
+let scannerConfigLoaded = false;
+
+async function loadScannerConfig() {
+  try {
+    const r = await fetch('/api/scanner/config');
+    if (r.ok) Object.assign(scannerConfig, await r.json());
+  } catch {}
+  scannerConfigLoaded = true;
+}
+
+async function patchScannerConfig(patch) {
+  Object.assign(scannerConfig, patch);
+  try {
+    await fetch('/api/scanner/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+    });
+  } catch {}
+}
+
+// ─── Scanner Logs ────────────────────────────────────────────────────────────────
+let scannerLogs = [];
+let scannerLogsOpen = false;
+let scannerLogsLoading = false;
+const scannerLogExpanded = new Set(); // tracks which log entry panels are expanded: `${id}-stdout` / `${id}-stderr`
+
+async function loadScannerLogs() {
+  scannerLogsLoading = true;
+  try {
+    const r = await fetch('/api/scanner/logs?limit=200');
+    if (r.ok) { const d = await r.json(); scannerLogs = d.logs || []; }
+  } catch {}
+  scannerLogsLoading = false;
+}
+
+async function clearScannerLogs() {
+  try { await fetch('/api/scanner/logs', { method: 'DELETE' }); } catch {}
+  scannerLogs = [];
+}
+
+// ─── Render: AI Defense Skill Scanner ──────────────────────────────────────────
+let scannerSkills = [];
+let scannerResults = {};
+let scannerRunning = false;
+let scannerSelectedSkill = null;
+
+// ── Severity helpers ─────────────────────────────────────────────────────────────
+function severityClass(sev) {
+  const s = (sev || 'info').toLowerCase();
+  return s === 'none' ? 'info' : s;
+}
+function severityLabel(sev) { return (!sev || sev === 'NONE') ? 'Clean' : sev; }
+
+function analyzerTagHtml(a) {
+  const raw = (a || 'static').toLowerCase().replace(/_analyzer$/, '').replace(/[_\s]/g, '');
+  const names = { static:'Static', behavioral:'Behavioral', pipeline:'Pipeline', llm:'LLM', aidefense:'AI Defense', aidefenseanalyzer:'AI Defense', bytecode:'Bytecode' };
+  return `<span class="analyzer-tag ${raw}">${names[raw] || a || 'Static'}</span>`;
+}
+
+const POLICY_MAP = {
+  command_injection:'pipeline', data_exfiltration:'pipeline', policy_violation:'file_limits',
+  prompt_injection:'rule_scoping', hidden_data:'hidden_files', credential_exposure:'credentials',
+  dangerous_cleanup:'system_cleanup', code_security:'file_classification',
+  tool_poisoning:'rule_scoping', social_engineering:'file_limits', manifest:'file_limits',
+};
+function policyLinkHtml(category) {
+  const sec = POLICY_MAP[category] || 'analysis_thresholds';
+  return `<a href="https://github.com/cisco-ai-defense/skill-scanner/blob/main/docs/POLICY.md" target="_blank"
+    style="font-size:10px;color:var(--text3);text-decoration:none;white-space:nowrap" title="POLICY.md § ${sec}">⚙ ${sec}</a>`;
+}
+
+function renderScannerBadge(result) {
+  if (!result) return '';
+  if (result.scanning) return '<span class="scanner-badge scanning">Scanning…</span>';
+  if (result.error && !(result.findings && result.findings.length)) return '<span class="scanner-badge error">Error</span>';
+  const sev = result.max_severity || 'NONE';
+  return `<span class="scanner-badge ${sev==='NONE'||sev==='INFO'?'clean':severityClass(sev)}">${severityLabel(sev)}</span>`;
+}
+
+function renderScannerFindings(findings, skillDir) {
+  if (!findings || !findings.length) return '';
+  return `<div class="scanner-findings" style="margin-top:10px">${findings.map(f => {
+    const hasLine = f.file_path && f.line_number != null;
+    const fileHtml = f.file_path
+      ? `<span class="scanner-file-link" style="font-size:10px;font-family:var(--mono);color:var(--accent);cursor:pointer;border-bottom:1px solid rgba(99,102,241,.4)" title="Click to open ${esc(f.file_path)}${hasLine ? ' at line ' + f.line_number : ''}">📄 ${esc(f.file_path)}${hasLine ? ':' + f.line_number : ''} ↗</span>`
+      : '';
+    return `<div class="scanner-finding" data-file-path="${esc(f.file_path||'')}" data-line="${f.line_number||''}" data-title="${esc(f.title||'')}" data-desc="${esc(f.description||'')}">
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;flex-wrap:wrap">
+        <span class="scanner-badge ${severityClass(f.severity)}" style="font-size:9px;padding:1px 6px">${f.severity||'INFO'}</span>
+        ${analyzerTagHtml(f.analyzer)}
+        ${f.category ? `<span style="font-size:10px;color:var(--text3);font-style:italic">${esc(f.category)}</span>` : ''}
+        ${f.rule_id ? `<code style="font-size:9px;color:var(--text3);background:rgba(255,255,255,.04);padding:1px 5px;border-radius:3px">${esc(f.rule_id)}</code>` : ''}
+        <span style="margin-left:auto;flex-shrink:0">${policyLinkHtml(f.category)}</span>
+      </div>
+      <div class="scanner-finding-title">${esc(f.title||'Finding')}</div>
+      <div class="scanner-finding-desc">${esc(f.description||'')}</div>
+      ${f.snippet ? `<pre style="margin-top:6px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;font:10px/1.55 var(--mono);overflow:auto;max-height:100px;color:var(--amber);white-space:pre-wrap">${esc(f.snippet)}</pre>` : ''}
+      ${fileHtml ? `<div style="margin-top:5px">${fileHtml}</div>` : ''}
+      ${f.remediation ? `<div style="font-size:10px;color:var(--green);margin-top:5px">💡 ${esc(f.remediation)}</div>` : ''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+const PRESET_DESCS = {
+  balanced:   'Broad allowlists, known installer domains trusted. Best balance of detection and false-positive rate.',
+  strict:     'Narrowest thresholds, all file types scanned, no installer demotions. Best for untrusted/external skills.',
+  permissive: 'Highest thresholds, fewest findings. Best for trusted internal skills or high-FP workflows.',
+};
+
+function renderScannerSettings() {
+  const presetBtns = ['balanced','strict','permissive'].map(p =>
+    `<button class="preset-btn ${scannerConfig.policy===p?'active':''}" data-preset="${p}" title="${esc(PRESET_DESCS[p])}">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`
+  ).join('');
+  const aiPanel = scannerConfig.useAiDefense ? `
+    <div class="aidefense-panel">
+      <h4>⚡ Cisco AI Defense Cloud API
+        <a href="https://github.com/cisco-ai-defense/skill-scanner/blob/main/docs/aidefense-analyzer.md" target="_blank" style="font-size:10px;font-weight:400;color:var(--accent)">docs ↗</a>
+      </h4>
+      <p style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.6">
+        Sends skill content to Cisco AI Defense cloud for semantic threat analysis.<br>
+        Detects: <strong style="color:var(--text)">Prompt Injection</strong> · <strong style="color:var(--text)">Harassment</strong> ·
+        <strong style="color:var(--text)">Hate Speech</strong> · <strong style="color:var(--text)">Violence</strong> ·
+        <strong style="color:var(--text)">Code Injection</strong> · <strong style="color:var(--text)">Social Division</strong>.<br>
+        Analyzes SKILL.md, manifest, markdown files, and code. Code Detection rule auto-excluded from code files to reduce false positives.
+      </p>
+      <div style="margin-bottom:8px">
+        <label class="settings-label" for="aidef-key-input">API Key
+          <span style="font-weight:400;text-transform:none;color:var(--text3)"> — <a href="https://www.cisco.com/site/us/en/products/security/ai-defense/index.html" target="_blank" style="color:var(--accent)">Cisco AI Defense ↗</a></span>
+        </label>
+        <input id="aidef-key-input" type="password" class="settings-input" placeholder="AI_DEFENSE_API_KEY" value="${esc(scannerConfig.aiDefenseApiKey||'')}"/>
+      </div>
+      <div style="margin-bottom:10px">
+        <label class="settings-label" for="aidef-url-input">API URL <span style="font-weight:400;text-transform:none;color:var(--text3)">(optional override)</span></label>
+        <input id="aidef-url-input" type="text" class="settings-input" placeholder="https://us.api.inspect.aidefense.security.cisco.com/api/v1" value="${esc(scannerConfig.aiDefenseApiUrl||'')}"/>
+      </div>
+      <button class="btn primary" id="aidef-save-btn" style="font-size:11px">Save Key</button>
+      <span id="aidef-msg" style="font-size:11px;color:var(--green);margin-left:8px"></span>
+    </div>` : '';
+  return `<div class="scanner-settings">
+    <div class="scanner-settings-head">
+      <h3>Scan Configuration</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a href="https://github.com/cisco-ai-defense/skill-scanner/blob/main/docs/POLICY.md" target="_blank" style="font-size:11px;color:var(--text3)">Policy docs ↗</a>
+        <button class="btn" style="font-size:11px" id="settings-done-btn">Done</button>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-group">
+        <span class="settings-label">Policy Preset</span>
+        <div style="display:flex;gap:3px;margin-bottom:7px">${presetBtns}</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.5">${esc(PRESET_DESCS[scannerConfig.policy]||'')}</div>
+        <div style="margin-top:8px;font-size:10px;color:var(--text3);line-height:1.6">
+          Controls detection thresholds, allowlists, and rule scoping.<br>
+          <a href="https://github.com/cisco-ai-defense/skill-scanner/blob/main/docs/POLICY.md" target="_blank" style="color:var(--accent)">Full policy reference ↗</a>
+        </div>
+      </div>
+      <div class="settings-group">
+        <span class="settings-label">Analyzers</span>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+          ${analyzerTagHtml('static')}${analyzerTagHtml('pipeline')}${analyzerTagHtml('bytecode')}
+          <span style="font-size:10px;color:var(--text3)">always active</span>
+        </div>
+        <div class="toggle-row" style="margin-bottom:7px">
+          <label class="toggle-sw"><input id="toggle-behavioral" type="checkbox" ${scannerConfig.useBehavioral?'checked':''}/><span class="toggle-slider"></span></label>
+          ${analyzerTagHtml('behavioral')}
+          <div><div style="font-size:11px;color:var(--text2)">AST Dataflow</div><div style="font-size:10px;color:var(--text3)">Tracks tainted data through Python AST</div></div>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle-sw"><input id="toggle-aidefense" type="checkbox" ${scannerConfig.useAiDefense?'checked':''}/><span class="toggle-slider"></span></label>
+          ${analyzerTagHtml('aidefense')}
+          <div><div style="font-size:11px;color:var(--text2)">Cisco AI Defense Cloud</div><div style="font-size:10px;color:var(--text3)">Semantic analysis · requires API key</div></div>
+        </div>
+      </div>
+    </div>
+    ${aiPanel}
+  </div>`;
+}
+
+async function loadScannerSkills() {
+  try {
+    const r = await fetch('/api/scanner/skills');
+    const d = await r.json();
+    scannerSkills = d.skills || [];
+  } catch { scannerSkills = []; }
+}
+
+async function scanSingleSkill(skill) {
+  scannerResults = { ...scannerResults, [skill.name]: { scanning: true } };
+  renderScanner();
+  try {
+    const r = await fetch('/api/scanner/scan', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: skill.path }),
+    });
+    const d = await r.json();
+    scannerResults = { ...scannerResults, [skill.name]: { ...d, _skillPath: skill.path } };
+  } catch (e) {
+    scannerResults = { ...scannerResults, [skill.name]: { error: e.message, findings: [], _skillPath: skill.path } };
+  }
+  renderScanner();
+}
+
+async function scanAllSkills() {
+  scannerRunning = true;
+  renderScanner();
+  for (const skill of scannerSkills) {
+    scannerResults = { ...scannerResults, [skill.name]: { scanning: true } };
+    renderScanner();
+    try {
+      const r = await fetch('/api/scanner/scan', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: skill.path }),
+      });
+      const d = await r.json();
+      scannerResults = { ...scannerResults, [skill.name]: { ...d, _skillPath: skill.path } };
+    } catch (e) {
+      scannerResults = { ...scannerResults, [skill.name]: { error: e.message, findings: [], _skillPath: skill.path } };
+    }
+    renderScanner();
+  }
+  scannerRunning = false;
+  renderScanner();
+}
+
+function renderScanner() {
+  const results = Object.values(scannerResults);
+  const done = results.filter(r => !r.scanning);
+  const totalFindings = done.reduce((s,r) => s + (r.findings_count||r.findings?.length||0), 0);
+  const critical = done.reduce((s,r) => s + (r.findings||[]).filter(f=>f.severity==='CRITICAL').length, 0);
+  const high     = done.reduce((s,r) => s + (r.findings||[]).filter(f=>f.severity==='HIGH').length, 0);
+  const medium   = done.reduce((s,r) => s + (r.findings||[]).filter(f=>f.severity==='MEDIUM').length, 0);
+  const low      = done.reduce((s,r) => s + (r.findings||[]).filter(f=>f.severity==='LOW').length, 0);
+  const clean    = done.filter(r => (r.findings_count||r.findings?.length||0)===0 && !r.error).length;
+  const errors   = done.filter(r => r.error && !(r.findings?.length)).length;
+  const pct = scannerRunning && scannerSkills.length > 0 ? Math.round((done.length/scannerSkills.length)*100) : 0;
+
+  const activeAnalyzers = [
+    analyzerTagHtml('static'), analyzerTagHtml('pipeline'), analyzerTagHtml('bytecode'),
+    scannerConfig.useBehavioral ? analyzerTagHtml('behavioral') : '',
+    scannerConfig.useAiDefense && scannerConfig.aiDefenseApiKey ? analyzerTagHtml('aidefense') : '',
+  ].filter(Boolean).join(' ');
+
+  let html = `
+    <div class="shell-header">
+      <div>
+        <h2 style="display:flex;align-items:center;gap:8px">
+          Skill Scanner
+          <span style="font-size:10px;padding:3px 9px;background:rgba(99,102,241,.12);color:var(--accent);border-radius:4px;font-weight:600">Cisco AI Defense</span>
+        </h2>
+        <div class="sub" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px">
+          Prompt injection · data exfiltration · malicious patterns
+          <span style="color:var(--border)">·</span>
+          <span style="font-size:11px;display:flex;align-items:center;gap:3px">Active: ${activeAnalyzers}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="scanner-settings-btn">${scannerSettingsOpen ? '✕ Settings' : '⚙ Settings'}</button>
+        <button class="btn" id="scanner-refresh" ${scannerRunning ? 'disabled' : ''}>Refresh</button>
+        <button class="btn primary" id="scanner-scan-all" ${scannerRunning||!scannerSkills.length ? 'disabled' : ''}>
+          ${scannerRunning ? 'Scanning…' : 'Scan All'}
+        </button>
+        ${done.length > 0 ? '<button class="btn" id="scanner-clear">Clear</button>' : ''}
+      </div>
+    </div>
+    ${scannerSettingsOpen ? renderScannerSettings() : ''}`;
+
+  if (scannerRunning) {
+    html += `<div class="scanner-progress">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:11px;color:var(--text3)">Scanning skills…${scannerConfig.useAiDefense&&scannerConfig.aiDefenseApiKey?' (AI Defense cloud enabled)':''}</span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--text2)">${done.length} / ${scannerSkills.length}</span>
+      </div>
+      <div class="scanner-progress-bar"><div class="scanner-progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  if (done.length > 0) {
+    html += `<div class="scanner-stats">
+      <div class="scanner-stat"><div class="label">Scanned</div><div class="value">${done.length}</div></div>
+      <div class="scanner-stat"><div class="label">Findings</div><div class="value" style="color:${totalFindings>0?'var(--amber)':'var(--green)'}">${totalFindings}</div></div>
+      <div class="scanner-stat"><div class="label">Critical</div><div class="value" style="color:${critical>0?'#c084fc':'var(--text3)'}">${critical}</div></div>
+      <div class="scanner-stat"><div class="label">High</div><div class="value" style="color:${high>0?'var(--red)':'var(--text3)'}">${high}</div></div>
+      <div class="scanner-stat"><div class="label">Medium</div><div class="value" style="color:${medium>0?'var(--amber)':'var(--text3)'}">${medium}</div></div>
+      <div class="scanner-stat"><div class="label">Low</div><div class="value" style="color:var(--text3)">${low}</div></div>
+      <div class="scanner-stat"><div class="label">Clean</div><div class="value" style="color:var(--green)">${clean}</div></div>
+      ${errors>0?`<div class="scanner-stat"><div class="label">Errors</div><div class="value" style="color:var(--red)">${errors}</div></div>`:''}
+    </div>`;
+  }
+
+  if (!scannerSkills.length && !scannerRunning) {
+    html += '<div class="empty">No skills found. Click Refresh to discover skills.</div>';
+  }
+
+  if (scannerSkills.length > 0) {
+    html += `<div style="margin-bottom:24px">${scannerSkills.map(skill => {
+      const result = scannerResults[skill.name];
+      const skillDir = result?._skillPath || skill.path;
+      const expanded = scannerSelectedSkill === skill.name;
+      const findings = result?.findings || [];
+      const durStr = result?.scan_duration_seconds != null ? result.scan_duration_seconds.toFixed(2)+'s' : '';
+      const usedTags = result?.analyzers_used?.length
+        ? `<span style="display:flex;gap:2px;flex-wrap:wrap">${result.analyzers_used.map(a => analyzerTagHtml(a)).join('')}</span>` : '';
+      const bySev = {};
+      findings.forEach(f => { bySev[f.severity]=(bySev[f.severity]||0)+1; });
+      const cols = {CRITICAL:'#c084fc',HIGH:'var(--red)',MEDIUM:'var(--amber)',LOW:'var(--text3)',INFO:'var(--text3)'};
+      const findingSummary = !result?.scanning && findings.length>0
+        ? Object.entries(bySev).filter(([,n])=>n>0).map(([s,n])=>`<span style="color:${cols[s]||'var(--text3)'}">${n} ${s.toLowerCase()}</span>`).join(' · ')
+        : '';
+      return `<div class="scanner-skill${expanded&&result&&!result.scanning?' expanded':''}" data-skill="${esc(skill.name)}" data-skill-dir="${esc(skillDir)}">
+        <div class="scanner-skill-head">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="scanner-skill-name">${esc(skill.name)}</span>
+              ${result ? renderScannerBadge(result) : ''}
+              ${durStr ? `<span style="font-size:10px;color:var(--text3)">${durStr}</span>` : ''}
+            </div>
+            ${!result?.scanning&&findings.length===0&&result&&!result.error?'<div style="font-size:11px;color:var(--green);margin-top:3px">No findings detected</div>':''}
+            ${findingSummary?`<div style="font-size:11px;margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>${findingSummary}</span>${usedTags}</div>`:(usedTags?`<div style="margin-top:3px">${usedTags}</div>`:'')}
+            ${result?.error&&!findings.length?`<div style="font-size:11px;color:var(--red);margin-top:3px">${esc(result.error)}</div>`:''}
+          </div>
+          <button class="btn skill-scan-btn" style="font-size:11px;flex-shrink:0;margin-left:8px"
+            data-scan-skill="${esc(skill.name)}" ${scannerRunning||result?.scanning?'disabled':''}>
+            ${result?.scanning ? 'Scanning…' : 'Scan'}
+          </button>
+        </div>
+        ${expanded&&!result?.scanning&&findings.length>0 ? renderScannerFindings(findings, skillDir) : ''}
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  html += `<div class="scanner-about">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <h4>How Skill Scanner Works</h4>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="https://github.com/cisco-ai-defense/skill-scanner" target="_blank" style="font-size:11px">GitHub ↗</a>
+        <a href="https://github.com/cisco-ai-defense/skill-scanner/blob/main/docs/POLICY.md" target="_blank" style="font-size:11px">Policy Docs ↗</a>
+        <a href="https://github.com/cisco-ai-defense/skill-scanner/blob/main/docs/aidefense-analyzer.md" target="_blank" style="font-size:11px">AI Defense Docs ↗</a>
+        <a href="https://github.com/cisco-ai-defense/skill-scanner/blob/main/docs/threat-taxonomy.md" target="_blank" style="font-size:11px">Threat Taxonomy ↗</a>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">
+      <div><span class="settings-label" style="margin-bottom:5px;display:block">Core (always active)</span>
+        <div style="font-size:11px;color:var(--text2);line-height:1.9">
+          ${analyzerTagHtml('static')} YAML + YARA patterns<br>
+          ${analyzerTagHtml('pipeline')} Shell taint analysis<br>
+          ${analyzerTagHtml('bytecode')} .pyc integrity</div></div>
+      <div><span class="settings-label" style="margin-bottom:5px;display:block">Optional (⚙ Settings)</span>
+        <div style="font-size:11px;color:var(--text2);line-height:1.9">
+          ${analyzerTagHtml('behavioral')} AST dataflow (Python)<br>
+          ${analyzerTagHtml('aidefense')} Cisco cloud API<br>
+          <span style="font-size:10px;color:var(--text3)">Enable in ⚙ Settings</span></div></div>
+      <div><span class="settings-label" style="margin-bottom:5px;display:block">Policy Presets</span>
+        <div style="font-size:11px;color:var(--text2);line-height:1.9">
+          <strong style="color:var(--text)">balanced</strong> — broad allowlists<br>
+          <strong style="color:var(--text)">strict</strong> — max coverage<br>
+          <strong style="color:var(--text)">permissive</strong> — trusted use</div></div>
+      <div><span class="settings-label" style="margin-bottom:5px;display:block">What Gets Analyzed</span>
+        <div style="font-size:11px;color:var(--text2);line-height:1.9">
+          SKILL.md + manifest<br>
+          Markdown · shell · Python<br>
+          Binaries · .pyc bytecode</div></div>
+    </div>
+    <p style="margin-top:10px;font-size:10px;color:var(--text3);line-height:1.6">
+      ⚠ Best-effort detection. No findings ≠ no risk. False positives and negatives expected. Human review essential.
+    </p>
+  </div>`;
+
+  html += renderScannerLogs();
+
+  setContent(html);
+  bindScannerEvents();
+}
+
+function prettyJson(str) {
+  try { return JSON.stringify(JSON.parse(str), null, 2); } catch { return str; }
+}
+
+function renderScannerLogs() {
+  const phaseIcon  = { start: '▶', complete: '✓', 'aidefense-result': '⚡' };
+  const phaseColor = { start: 'var(--text3)', complete: 'var(--green)', 'aidefense-result': 'var(--accent)' };
+  const outcomeColor = { success: 'var(--green)', error: 'var(--red)', skipped: 'var(--yellow)' };
+
+  const logsHtml = scannerLogs.length === 0
+    ? `<div style="padding:28px 0;text-align:center;color:var(--text3);font-size:13px">
+         No scan logs yet — run a scan to see command &amp; response output here.
+       </div>`
+    : scannerLogs.map(entry => {
+        const id = entry.id;
+        const ts = new Date(entry.time);
+        const timeStr = ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        const dateStr = ts.toLocaleDateString([], {month:'short',day:'numeric'});
+
+        const isError   = entry.outcome === 'error';
+        const icon  = isError ? '✕' : (phaseIcon[entry.phase]  || '·');
+        const color = isError ? 'var(--red)' : (phaseColor[entry.phase] || 'var(--text3)');
+        const oColor = entry.outcome ? (outcomeColor[entry.outcome] || color) : color;
+
+        const analyzerPills = (entry.analyzers || []).map(a =>
+          `<span class="analyzer-tag ${a}">${a}</span>`).join('');
+        const aiKeyBadge = entry.aiDefenseEnabled
+          ? (entry.aiDefenseApiKeyPresent
+              ? `<span class="scan-badge scan-badge-ok">key ✓</span>`
+              : `<span class="scan-badge scan-badge-err">no key</span>`)
+          : '';
+        const exitBadge = entry.exitCode != null && entry.exitCode !== 0
+          ? `<span class="scan-badge scan-badge-err">exit ${entry.exitCode}</span>` : '';
+
+        // ── command block (always shown) ──────────────────────────────────
+        const cmdBlock = `<div class="scan-cmd-block">
+          <span class="scan-cmd-label">CMD</span>
+          <code class="scan-cmd-code">${esc(entry.command)}</code>
+        </div>`;
+
+        // ── stdout / stderr expand panels ─────────────────────────────────
+        const hasStdout = !!(entry.rawStdout && entry.rawStdout.trim());
+        const hasStderr = !!(entry.rawStderr && entry.rawStderr.trim());
+        const stdoutOpen = scannerLogExpanded.has(`${id}-stdout`);
+        const stderrOpen = scannerLogExpanded.has(`${id}-stderr`);
+
+        const outputBtns = (hasStdout || hasStderr) ? `<div class="scan-output-btns">
+          ${hasStdout ? `<button class="scan-output-btn" data-log-id="${id}" data-stream="stdout">
+            ${stdoutOpen ? '▾' : '▸'} stdout
+            <span style="font-size:10px;opacity:.6">${entry.rawStdout.length > 1024 ? Math.round(entry.rawStdout.length/1024)+'KB' : entry.rawStdout.length+'B'}</span>
+          </button>` : ''}
+          ${hasStderr ? `<button class="scan-output-btn scan-output-btn-err" data-log-id="${id}" data-stream="stderr">
+            ${stderrOpen ? '▾' : '▸'} stderr
+            <span style="font-size:10px;opacity:.6">${entry.rawStderr.length > 1024 ? Math.round(entry.rawStderr.length/1024)+'KB' : entry.rawStderr.length+'B'}</span>
+          </button>` : ''}
+        </div>` : '';
+
+        const stdoutPanel = hasStdout && stdoutOpen ? `<pre class="scan-raw-pre scan-raw-stdout">${esc(prettyJson(entry.rawStdout))}</pre>` : '';
+        const stderrPanel = hasStderr && stderrOpen ? `<pre class="scan-raw-pre scan-raw-stderr">${esc(entry.rawStderr)}</pre>` : '';
+
+        // ── AI Defense URL note ───────────────────────────────────────────
+        const urlNote = entry.aiDefenseApiUrl
+          ? `<div class="scan-meta-line">API URL: ${esc(entry.aiDefenseApiUrl)}</div>` : '';
+
+        return `<div class="scan-log-entry" data-phase="${entry.phase}" data-outcome="${entry.outcome||''}">
+          <div class="scan-log-icon" style="color:${oColor}">${icon}</div>
+          <div class="scan-log-body">
+            <div class="scan-log-top">
+              <span class="scan-log-skill">${esc(entry.skill)}</span>
+              <span class="scan-log-analyzers">${analyzerPills}</span>
+              ${aiKeyBadge}${exitBadge}
+              ${entry.findingsCount != null ? `<span class="scan-meta-pill">${entry.findingsCount} finding(s)</span>` : ''}
+              ${entry.durationMs  != null ? `<span class="scan-meta-pill">${entry.durationMs}ms</span>` : ''}
+              <span class="scan-log-time">${dateStr} ${timeStr}</span>
+            </div>
+            <div class="scan-log-msg" style="color:${color}">${esc(entry.message)}</div>
+            <div class="scan-meta-line">policy: <strong>${esc(entry.policy)}</strong>${urlNote ? ' · ' + urlNote.replace(/^<div[^>]*>|<\/div>$/g,'') : ''}</div>
+            ${cmdBlock}
+            ${outputBtns}${stdoutPanel}${stderrPanel}
+          </div>
+        </div>`;
+      }).join('');
+
+  return `<div class="scanner-logs-section">
+    <div class="scanner-logs-header">
+      <button id="scanner-logs-toggle" class="scan-log-toggle-btn">
+        <span class="scan-log-chevron">${scannerLogsOpen ? '▾' : '▸'}</span>
+        <span style="font-weight:600;font-size:13px">Scan Activity Log</span>
+        ${scannerLogs.length ? `<span class="scan-log-count">${scannerLogs.length}</span>` : ''}
+        <span style="font-size:11px;color:var(--text3)">— command &amp; raw API response output</span>
+      </button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="scanner-logs-refresh" style="font-size:11px;padding:4px 10px">↺ Refresh</button>
+        ${scannerLogs.length ? `<button class="btn" id="scanner-logs-clear" style="font-size:11px;padding:4px 10px;color:var(--red)">✕ Clear</button>` : ''}
+      </div>
+    </div>
+    ${scannerLogsOpen ? `<div class="scan-log-list">${logsHtml}</div>` : ''}
+  </div>`;
+}
+
+function bindScannerEvents() {
+  const logsToggle = $content.querySelector('#scanner-logs-toggle');
+  if (logsToggle) logsToggle.onclick = () => {
+    scannerLogsOpen = !scannerLogsOpen;
+    if (scannerLogsOpen) loadScannerLogs().then(() => renderScanner());
+    else renderScanner();
+  };
+  const logsRefresh = $content.querySelector('#scanner-logs-refresh');
+  if (logsRefresh) logsRefresh.onclick = () => {
+    scannerLogsOpen = true;
+    loadScannerLogs().then(() => renderScanner());
+  };
+  const logsClear = $content.querySelector('#scanner-logs-clear');
+  if (logsClear) logsClear.onclick = (e) => {
+    e.stopPropagation();
+    scannerLogExpanded.clear();
+    clearScannerLogs().then(() => renderScanner());
+  };
+
+  // stdout / stderr expand toggle buttons (event delegation on the log list)
+  const logList = $content.querySelector('.scan-log-list');
+  if (logList) logList.addEventListener('click', e => {
+    const btn = e.target.closest('.scan-output-btn');
+    if (!btn) return;
+    const logId  = btn.dataset.logId;
+    const stream = btn.dataset.stream;
+    const key = `${logId}-${stream}`;
+    if (scannerLogExpanded.has(key)) scannerLogExpanded.delete(key);
+    else scannerLogExpanded.add(key);
+    renderScanner();
+  });
+
+  const settingsBtn = $content.querySelector('#scanner-settings-btn');
+  if (settingsBtn) settingsBtn.onclick = () => { scannerSettingsOpen = !scannerSettingsOpen; renderScanner(); };
+  const refreshBtn = $content.querySelector('#scanner-refresh');
+  if (refreshBtn) refreshBtn.onclick = () => loadScannerSkills().then(() => renderScanner());
+  const scanAllBtn = $content.querySelector('#scanner-scan-all');
+  if (scanAllBtn) scanAllBtn.onclick = () => scanAllSkills();
+  const clearBtn = $content.querySelector('#scanner-clear');
+  if (clearBtn) clearBtn.onclick = () => { scannerResults={}; scannerSelectedSkill=null; renderScanner(); };
+
+  const doneBtn = $content.querySelector('#settings-done-btn');
+  if (doneBtn) doneBtn.onclick = () => { scannerSettingsOpen=false; renderScanner(); };
+  $content.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.onclick = () => { patchScannerConfig({policy:btn.dataset.preset}); renderScanner(); };
+  });
+  const behavToggle = $content.querySelector('#toggle-behavioral');
+  if (behavToggle) behavToggle.onchange = () => patchScannerConfig({useBehavioral:behavToggle.checked});
+  const aiToggle = $content.querySelector('#toggle-aidefense');
+  if (aiToggle) aiToggle.onchange = () => { patchScannerConfig({useAiDefense:aiToggle.checked}); renderScanner(); };
+  const keyInp = $content.querySelector('#aidef-key-input');
+  if (keyInp) keyInp.oninput = () => { scannerConfig.aiDefenseApiKey = keyInp.value; };
+  const urlInp = $content.querySelector('#aidef-url-input');
+  if (urlInp) urlInp.oninput = () => { scannerConfig.aiDefenseApiUrl = urlInp.value; };
+  const saveBtn = $content.querySelector('#aidef-save-btn');
+  if (saveBtn) saveBtn.onclick = () => {
+    if (keyInp) scannerConfig.aiDefenseApiKey = keyInp.value;
+    if (urlInp) scannerConfig.aiDefenseApiUrl = urlInp.value;
+    patchScannerConfig({aiDefenseApiKey:scannerConfig.aiDefenseApiKey, aiDefenseApiUrl:scannerConfig.aiDefenseApiUrl});
+    const msg = $content.querySelector('#aidef-msg');
+    if (msg) { msg.textContent='✓ Saved'; setTimeout(()=>{if(msg)msg.textContent='';},2500); }
+  };
+
+  $content.querySelectorAll('.scanner-skill').forEach(el => {
+    el.onclick = (e) => {
+      if (e.target.closest('button,a,.scanner-file-link,.scanner-finding')) return;
+      const name = el.dataset.skill;
+      scannerSelectedSkill = scannerSelectedSkill===name ? null : name;
+      renderScanner();
+    };
+  });
+  $content.querySelectorAll('.skill-scan-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const skill = scannerSkills.find(s => s.name===btn.dataset.scanSkill);
+      if (skill) scanSingleSkill(skill);
+    };
+  });
+  $content.querySelectorAll('.scanner-file-link').forEach(link => {
+    link.onclick = (e) => {
+      e.stopPropagation();
+      const finding = link.closest('.scanner-finding');
+      const skillEl = link.closest('.scanner-skill');
+      if (!finding||!skillEl) return;
+      const filePath = finding.dataset.filePath;
+      const lineNum  = parseInt(finding.dataset.line,10)||0;
+      const title    = finding.dataset.title;
+      const desc     = finding.dataset.desc;
+      const skillDir = skillEl.dataset.skillDir;
+      openFileModal(skillDir, filePath, lineNum, title, desc);
+    };
+  });
+}
+
+
+// ─── Poll ─────────────────────────────────────────────────────────────────────
+async function poll() {
+  try {
+    if (tab === 'about') {
+      if ($content.querySelector('.md-body')) return;
+      if (!readmeCache) {
+        setContent('<div class="loading">Loading…</div>');
+        const r = await fetch('/api/readme');
+        if (r.ok) readmeCache = await r.text();
+        else readmeCache = '# Error\n\nCould not load README.md';
+      }
+      await renderAbout(readmeCache);
+      return;
+    }
+    if (tab === 'policies') {
+      const [rPol, rOv, rKs] = await Promise.all([
+        fetch('/api/policies'), fetch('/api/overview'), fetch('/api/killswitches'),
+      ]);
+      const pol = await rPol.json();
+      const ov  = await rOv.json();
+      const ks  = await rKs.json();
+      policiesData = { policies: pol.policies || [], overview: ov, ks, policiesError: pol.error || null };
+      ksState = ks;
+      syncKsCountdown();
+      updateEnforcingBadge();
+      renderPolicies();
+      return;
+    }
+    if (tab === 'activity') {
+      const r = await fetch(`/api/activity?since=${encodeURIComponent(since)}&limit=200`);
+      const d = await r.json();
+      let events = d.events || [];
+      if (filters.kind) events = events.filter(e => (e.kind || '').includes(filters.kind) || (e.source || '').includes(filters.kind));
+      renderActivity({ events, total: events.length });
+      return;
+    }
+    if (tab === 'llm') {
+      const url = `/api/events/net?since=${encodeURIComponent(since)}${filters.remote ? '&remote=' + encodeURIComponent(filters.remote) : ''}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      let events = d.events || [];
+      if (filters.unknown) events = events.filter(e => e.unknownEgress);
+      renderLLM({ events, total: events.length });
+      return;
+    }
+    if (tab === 'tools') {
+      const url = `/api/events/exec?since=${encodeURIComponent(since)}${filters.q ? '&q=' + encodeURIComponent(filters.q) : ''}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      renderTools(d);
+      return;
+    }
+    if (tab === 'fileops') {
+      const qs = [
+        `since=${encodeURIComponent(since)}`,
+        filters.path      ? `path=${encodeURIComponent(filters.path)}`           : '',
+        filters.operation ? `operation=${encodeURIComponent(filters.operation)}` : '',
+      ].filter(Boolean).join('&');
+      const r = await fetch(`/api/events/file?${qs}`);
+      const d = await r.json();
+      renderFileOps(d);
+      return;
+    }
+    if (tab === 'skills') {
+      const r = await fetch(`/api/skills?since=${encodeURIComponent(since)}`);
+      const d = await r.json();
+      let events = d.events || [];
+      if (filters.flag === 'critical') events = events.filter(e => e.outsideSkill && e.sensitive);
+      if (filters.q) events = events.filter(e => (e.process || '').includes(filters.q) || (e.path || '').includes(filters.q));
+      renderSkills({ events, total: events.length });
+      return;
+    }
+    if (tab === 'scanner') {
+      if (!scannerConfigLoaded) await loadScannerConfig();
+      if (!scannerSkills.length) await loadScannerSkills();
+      renderScanner();
+      return;
+    }
+  } catch (e) {
+    setContent(`<div class="empty">Error: ${esc(e.message)}</div>`);
+  }
+}
+
+// ─── Kill switch management ────────────────────────────────────────────────────
+// Guard: prevents double-clicks and race conditions with the auto-refresh intervals.
+// When ksToggling[type] is true, auto-refresh skips updating that switch's UI.
+const ksToggling = { exec: false, net: false };
+
+function fmtKsCountdown(secs) {
+  if (secs == null) return '';
+  return ` (${secs}s)`;
+}
+
+function ksHeaderBtnHTML(type) {
+  if (ksToggling[type]) {
+    return `<span class="ks-dot"></span><span style="opacity:.6">Working…</span>`;
+  }
+  if (type === 'exec') {
+    const active = !!ksState.exec?.active;
+    const secs = ksClientCountdown.exec;
+    return `<span class="ks-dot"></span>${active ? `⛔ Exec Blocked${fmtKsCountdown(secs)}` : 'Block Exec (60s)'}`;
+  }
+  const active = !!ksState.net?.active;
+  const secs = ksClientCountdown.net;
+  return `<span class="ks-dot"></span>${active ? `🔌 Net Isolated${fmtKsCountdown(secs)}` : 'Isolate Net (60s)'}`;
+}
+
+function updateKsButtons() {
+  ['exec', 'net'].forEach(type => {
+    const btn = document.getElementById(`ks-${type}-btn`);
+    if (!btn) return;
+    const toggling = ksToggling[type];
+    const active   = !!ksState[type]?.active;
+    btn.classList.toggle('active', active && !toggling);
+    btn.disabled = toggling;
+    btn.innerHTML = ksHeaderBtnHTML(type);
+    if (!toggling) {
+      const secs = ksClientCountdown[type];
+      btn.title = active
+        ? `Lockout ACTIVE${secs != null ? ` — ${secs}s remaining` : ''}. Click to end early.`
+        : type === 'exec'
+          ? 'Temporarily block all tool/subprocess execution from OpenClaw for 60 seconds'
+          : 'Temporarily block all outbound network connections from OpenClaw for 60 seconds';
+    }
+  });
+}
+
+function syncKsCountdown() {
+  ksClientCountdown.exec = ksState.exec?.active ? (ksState.exec.remainingSeconds ?? null) : null;
+  ksClientCountdown.net  = ksState.net?.active  ? (ksState.net.remainingSeconds  ?? null) : null;
+  const anyActive = !!ksState.exec?.active || !!ksState.net?.active;
+  if (anyActive && !ksCountdownInterval) {
+    ksCountdownInterval = setInterval(() => {
+      let stillActive = false;
+      ['exec', 'net'].forEach(t => {
+        if (ksClientCountdown[t] != null && ksClientCountdown[t] > 0) {
+          ksClientCountdown[t]--;
+          if (ksClientCountdown[t] > 0) stillActive = true;
+        }
+      });
+      updateKsButtons();
+      // Only re-render the lightweight ks section, not the full policies page
+      const ksel = document.getElementById('ks-section');
+      if (ksel) renderKsSection();
+      if (!stillActive) { clearInterval(ksCountdownInterval); ksCountdownInterval = null; }
+    }, 1000);
+  } else if (!anyActive && ksCountdownInterval) {
+    clearInterval(ksCountdownInterval);
+    ksCountdownInterval = null;
+  }
+}
+
+async function refreshKillSwitches() {
+  try {
+    const r = await fetch('/api/killswitches');
+    if (!r.ok) return;
+    const fresh = await r.json();
+    // Merge: don't overwrite state for a type that is currently being toggled
+    ['exec', 'net'].forEach(t => {
+      if (!ksToggling[t]) ksState[t] = fresh[t];
+    });
+    syncKsCountdown();
+    updateKsButtons();
+    const ksel = document.getElementById('ks-section');
+    if (ksel) renderKsSection();
+  } catch {}
+}
+
+async function toggleKillSwitch(type) {
+  if (ksToggling[type]) return;  // prevent double-click / re-entrant calls
+
+  const current = !!ksState[type]?.active;
+  ksToggling[type] = true;
+
+  // Immediate visual feedback — update both header btn and card btn
+  updateKsButtons();
+  const ksel = document.getElementById('ks-section');
+  if (ksel) renderKsSection();
+
+  try {
+    const r = await fetch(`/api/killswitches/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: !current }),
+    });
+    const d = await r.json();
+    if (!d.ok) alert(d.error || `Failed to ${current ? 'end' : 'activate'} lockout`);
+  } catch (e) {
+    alert(e.message || 'Network error — could not reach dashboard server');
+  } finally {
+    ksToggling[type] = false;
+    // Sync real state from server before re-rendering
+    try {
+      const r2 = await fetch('/api/killswitches');
+      if (r2.ok) {
+        const fresh = await r2.json();
+        ksState = fresh;
+        syncKsCountdown();
+      }
+    } catch {}
+    updateKsButtons();
+    if (document.getElementById('ks-section')) renderKsSection();
+  }
+}
+
+document.getElementById('ks-exec-btn').onclick = () => toggleKillSwitch('exec');
+document.getElementById('ks-net-btn').onclick  = () => toggleKillSwitch('net');
+
+poll();
+setInterval(poll, 5000);
+refreshKillSwitches();
+setInterval(refreshKillSwitches, 5000);
+
+// Eagerly fetch policy modes so the modal can show correct mode even before visiting Policies tab
+fetch('/api/policies').then(r => r.json()).then(d => {
+  policiesData.policies = d.policies || [];
+  updateEnforcingBadge();
+}).catch(() => {});
+})();
+</script>
+</body>
+</html>

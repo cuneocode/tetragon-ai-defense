@@ -1,0 +1,42 @@
+# KILL SWITCH: Block OpenClaw tool execution.
+# Blocks network tools, runtimes, and package managers that OpenClaw uses to run tools.
+# Does NOT block shell utilities (bash, sh, grep, etc.) so your own terminal stays usable.
+# Usage: loaded in enforce mode to activate (auto-expires 60s), deleted to deactivate.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-ks-exec
+spec:
+  kprobes:
+    - call: "__arm64_sys_execve"
+      syscall: true
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Postfix"
+              values:
+                - "/curl"
+                - "/wget"
+                - "/ssh"
+                - "/scp"
+                - "/rsync"
+                - "/git"
+                - "/kubectl"
+                - "/helm"
+                - "/docker"
+                - "/podman"
+                - "/python"
+                - "/python3"
+                - "/node"
+                - "/npx"
+                - "/npm"
+                - "/clawhub"
+                - "/openclaw"
+                - "/openclaw-gateway"
+          matchActions:
+            - action: Override
+              argError: -1
+            - action: Post
+      args:
+        - index: 0
+          type: "string"

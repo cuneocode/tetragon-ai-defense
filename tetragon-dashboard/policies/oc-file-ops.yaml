@@ -1,0 +1,83 @@
+# File operations: open, write (with content capture), delete.
+# Replaces oc-workspace-writes. Enforcement: Override returns -EPERM when in enforce mode.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-file-ops
+spec:
+  kprobes:
+    # 1. security_file_open — file access (open/create)
+    - call: "security_file_open"
+      syscall: false
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Prefix"
+              values:
+                - "/home/cuneocode/.openclaw/workspace/"
+                - "/home/cuneocode/.openclaw/tools/"
+                - "/home/cuneocode/.openclaw/openclaw.json"
+                - "/home/cuneocode/.openclaw/credentials/"
+                - "/home/cuneocode/.openclaw/agents/"
+                - "/home/cuneocode/.openclaw/logs/"
+                - "/home/cuneocode/.ssh/"
+                - "/home/cuneocode/.aws/"
+                - "/home/cuneocode/.kube/"
+                - "/home/cuneocode/.config/gcloud/"
+                - "/etc/shadow"
+          matchActions:
+            - action: Post
+            - action: Override
+              argError: -1
+      args:
+        - index: 0
+          type: "file"
+
+    # 2. vfs_write — capture write buffer content (char_buf), path from file
+    - call: "vfs_write"
+      syscall: false
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Prefix"
+              values:
+                - "/home/cuneocode/.openclaw/workspace/"
+                - "/home/cuneocode/.openclaw/tools/"
+                - "/home/cuneocode/.openclaw/openclaw.json"
+                - "/home/cuneocode/.openclaw/credentials/"
+                - "/home/cuneocode/.openclaw/agents/"
+                - "/home/cuneocode/.openclaw/logs/"
+                - "/home/cuneocode/.ssh/"
+                - "/home/cuneocode/.aws/"
+                - "/home/cuneocode/.kube/"
+                - "/home/cuneocode/.config/gcloud/"
+                - "/etc/shadow"
+          matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "file"
+        - index: 1
+          type: "char_buf"
+          sizeArgIndex: 2
+        - index: 2
+          type: "size_t"
+
+    # 3. do_unlinkat — file/dir delete
+    - call: "do_unlinkat"
+      syscall: false
+      selectors:
+        - matchArgs:
+            - index: 1
+              operator: "Prefix"
+              values:
+                - "/home/cuneocode/.openclaw/workspace/"
+                - "/home/cuneocode/.openclaw/tools/"
+                - "/home/cuneocode/.openclaw/credentials/"
+          matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "int"
+        - index: 1
+          type: "filename"

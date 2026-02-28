@@ -1,0 +1,27 @@
+# KILL SWITCH: Block all outbound network connections from OpenClaw gateway processes.
+# Uses security_socket_connect (a security_ LSM hook) so Override is supported.
+# connect() calls from node/curl/wget return EPERM. Existing connections unaffected.
+# Usage: loaded in enforce mode to activate, deleted to deactivate.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-ks-net
+spec:
+  kprobes:
+    - call: "security_socket_connect"
+      syscall: false
+      selectors:
+        - matchBinaries:
+          - operator: "Postfix"
+            values:
+              - "/node"
+              - "/curl"
+              - "/wget"
+              - "/ssh"
+              - "/openclaw"
+              - "/openclaw-gateway"
+              - "/clawhub"
+          matchActions:
+            - action: Override
+              argError: -1
+            - action: Post

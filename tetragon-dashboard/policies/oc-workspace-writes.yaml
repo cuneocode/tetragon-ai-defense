@@ -1,0 +1,31 @@
+# Trace write-related file operations to OpenClaw workspace, config, credentials, and sensitive paths.
+# Catches toxic skill scenario: skill writing outside sandbox or modifying credentials.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: oc-workspace-writes
+spec:
+  kprobes:
+    - call: "security_file_open"
+      syscall: false
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: "Prefix"
+              values:
+                - "/home/cuneocode/.openclaw/workspace/"
+                - "/home/cuneocode/.openclaw/tools/"
+                - "/home/cuneocode/.openclaw/openclaw.json"
+                - "/home/cuneocode/.openclaw/credentials/"
+                - "/home/cuneocode/.openclaw/agents/"
+                - "/home/cuneocode/.openclaw/logs/"
+                - "/home/cuneocode/.ssh/"
+                - "/home/cuneocode/.aws/"
+                - "/home/cuneocode/.kube/"
+                - "/home/cuneocode/.config/gcloud/"
+                - "/etc/shadow"
+          matchActions:
+            - action: Post
+      args:
+        - index: 0
+          type: "file"
