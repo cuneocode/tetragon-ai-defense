@@ -1,4 +1,4 @@
-# Tetragon AI Defense
+# Tetragon + AI Defense
 
 **Proof of concept only** — not production-ready. For experimentation and evaluation.
 
