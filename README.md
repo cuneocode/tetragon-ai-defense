@@ -22,7 +22,7 @@ node server.mjs
 # Open http://localhost:18790
 ```
 
-### AI Defense Shim
+### AI Defense Shim (a basic proxy)
 ```bash
 cd aidef-shim
 cp .env.example .env   # Edit with your AI Defense API key
